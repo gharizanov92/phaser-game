@@ -9,75 +9,146 @@
 		var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 
 		function preload() {
-		    game.load.spritesheet('dude', 'assets/dude.png', 18, 24);
+		    game.load.spritesheet('lady gaga', 'assets/stella_walk.png', 64, 64);
 		    game.load.image('star', 'assets/star.png');
+		    game.load.image('grass', 'assets/grass_random_grid.png');
+		    game.load.spritesheet('background', 'assets/ground_tiles.png', 64, 64);
 		}
 
 		var player;
 		var platforms;
 		var cursors;
 
+		var moveToX = 300;
+		var moveToY = 200;
+
+		var tileWidth = 10;
+		var tileHeight = 10;
+
 		var stars;
+		var obstacles;
 		var score = 0;
 		var scoreText;
 
-		function create() {			
+		var animationAngles = {
+			0: 'right',
+			45: 'upRight',
+			90: 'up',
+			135: 'upLeft',
+			180: 'left',
+			225: 'downLeft',
+			270: 'down',
+			315: 'downRight'
+		}
 
+		function create() {	
+
+			game.world.setBounds(0, 0, 800, 600);
+
+			for (var i = 0; i < 800 / 64; i++) {
+				for (var j = 0; j < 600 / 64; j++) {
+		    	game.add.tileSprite(i*64, j*64, i*64 + 64, j*64 + 64, 'background', Math.floor(Math.random()*4 + 1));	
+		    	}	
+			}
+
+			// room
 			game.physics.startSystem(Phaser.Physics.ARCADE);
 		    platforms = game.add.group();
 		    platforms.enableBody = true;
 
-		    // room
+	    	// stars
 		    stars = game.add.group();
 		    stars.enableBody = true;
 		    stars.create(250, 210, 'star');
 
+		    // obstacles
+		    obstacles = game.add.group();
+		    obstacles.enableBody = true;
+		    //obstacles.body.immovable = true;
+		    obstacles.create(350, 210, 'star');
+
 		    // player
-		    player = game.add.sprite(300, 200, 'dude');
-		    player.scale.setTo(2,2);
+		    player = game.add.sprite(300, 200, 'lady gaga');
+		    player.scale.setTo(1,1);
 
 		    //  We need to enable physics on the player
 		    game.physics.arcade.enable(player);
 		    player.body.collideWorldBounds = true;
 
-		    //  Player physics properties. Give the little guy a slight bounce.
-		    player.body.bounce.y = 0.2;
-
 		    //  Our two animations, walking left and right.
-		    player.animations.add('right', [3, 4], 10, true);
-		    player.animations.add('left', [9, 10], 10, true);
-		    player.animations.add('up', [12, 13, 14], 10, true);
-		    player.animations.add('down', [0, 1, 2], 10, true);
+		    player.animations.add('down', [0, 1, 2, 3], 8, true);
+		    player.animations.add('left', [4, 5, 6, 7], 8, true);
+		    player.animations.add('right', [8, 9, 10, 11], 8, true);
+		    player.animations.add('up', [12, 13, 14, 15], 8, true);
+		    player.animations.add('downRight', [16, 17, 18, 19], 8, true);
+		    player.animations.add('downLeft', [20, 21, 22, 23], 8, true);
+		    player.animations.add('upRight', [24, 25, 26, 27], 8, true);
+		    player.animations.add('upLeft', [28, 29, 30, 31], 8, true);
 
 		    cursors = game.input.keyboard.createCursorKeys();
 
 		    scoreText = game.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
+		    game.camera.follow(player);
+
+		    game.input.onDown.add(moveTo, this);
 		}
 
 		function update() {
+			var xspeed = 0;
+			var yspeed = 0;
+			var direction;
 			player.body.velocity.x = 0;
 			player.body.velocity.y = 0;
 
 		    game.physics.arcade.collide(player, platforms);
 			game.physics.arcade.collide(stars, platforms);
+			game.physics.arcade.collide(obstacles, platforms);
 
 			game.physics.arcade.overlap(player, stars, collectStar, null, this);
-
+		function degToRad(degrees) {
+			return degrees * Math.PI / 180;
+		}
 		    if (cursors.left.isDown) {
-		        player.body.velocity.x = -150;
-		        player.animations.play('left');
-		    } else if (cursors.right.isDown) {
-		        player.body.velocity.x = 150;
-		        player.animations.play('right');
-		    } else if (cursors.up.isDown) {
-		        player.body.velocity.y = -150;
-		        player.animations.play('up');
-		    } else if (cursors.down.isDown) {
-		        player.body.velocity.y = 150;
-		        player.animations.play('down');
-		    } else {
-		    	player.animations.stop();
+		    	direction = getDirection(180, direction);
+		    } 
+		    if (cursors.right.isDown) {
+		        direction = getDirection(0, direction);
+		    } 
+		    if (cursors.up.isDown) {
+		        direction = getDirection(90, direction);
+		    } 
+		    if (cursors.down.isDown) {
+		    	if (cursors.right.isDown) { 
+		    		direction = 315;
+		    	} else {
+		    		direction = getDirection(270, direction);
+		    	}
 		    }
+
+			player.body.velocity.y = -150 * Math.sin(degToRad(direction));
+			player.body.velocity.x = 150 * Math.cos(degToRad(direction));
+
+			player.animations.play(animationAngles[direction]);
+
+	    	if (cursors.left.isUp && cursors.right.isUp && cursors.up.isUp && cursors.down.isUp) {
+	    		player.animations.stop();
+    		}
+		}
+
+		function getDirection(newDiretion, oldDirection) {
+			if (oldDirection === undefined) {
+				return newDiretion;
+			} else {
+				return (newDiretion + oldDirection) / 2;
+			}
+		}
+
+		function degToRad(degrees) {
+			return degrees * Math.PI / 180;
+		}
+
+		function moveTo() {
+			//stars.create(game.input.x, game.input.y, 'star');
 		}
 
 		function collectStar (player, star) {
