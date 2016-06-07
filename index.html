@@ -47,7 +47,7 @@
 
 			for (var i = 0; i < 800 / 64; i++) {
 				for (var j = 0; j < 600 / 64; j++) {
-		    	game.add.tileSprite(i*64, j*64, i*64 + 64, j*64 + 64, 'background', Math.floor(Math.random()*4 + 1));	
+		    	game.add.tileSprite(i*64, j*64, 64, 64, 'background', Math.floor(Math.random()*4 + 1));	
 		    	}	
 			}
 
@@ -67,6 +67,12 @@
 		    //obstacles.body.immovable = true;
 		    obstacles.create(350, 210, 'star');
 
+		    for (var i = 0; i < 5; i++) {
+		    	var x = Math.random() * 704 + 64;
+		    	var y = Math.random() * 504 + 64;
+		    	game.add.tileSprite(x, y, 64, 64, 'background', Math.floor(Math.random()*4 + 6));
+		    }
+
 		    // player
 		    player = game.add.sprite(300, 200, 'lady gaga');
 		    player.scale.setTo(1,1);
@@ -82,8 +88,8 @@
 		    player.animations.add('up', [12, 13, 14, 15], 8, true);
 		    player.animations.add('downRight', [16, 17, 18, 19], 8, true);
 		    player.animations.add('downLeft', [20, 21, 22, 23], 8, true);
-		    player.animations.add('upRight', [24, 25, 26, 27], 8, true);
-		    player.animations.add('upLeft', [28, 29, 30, 31], 8, true);
+		    player.animations.add('upLeft', [24, 25, 26, 27], 8, true);
+		    player.animations.add('upRight', [28, 29, 30, 31], 8, true);
 
 		    cursors = game.input.keyboard.createCursorKeys();
 
