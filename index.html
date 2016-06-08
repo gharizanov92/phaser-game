@@ -5,13 +5,17 @@
 </head>
 <body>
 	<script type="text/javascript" src="js/phaser.min.js"></script>
+	<script type="text/javascript" src="js/easystar-0.3.0.min.js"></script>
+	<script type="text/javascript" src="js/phaser_pathfinding-0.2.0.min.js"></script>
 	<script type="text/javascript">
-		var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+		var game = new Phaser.Game(800, 600, Phaser.CANVAS, '', { preload: preload, create: create, update: update });
 
 		function preload() {
 		    game.load.spritesheet('lady gaga', 'assets/stella_walk.png', 64, 64);
 		    game.load.image('star', 'assets/star.png');
 		    game.load.image('grass', 'assets/grass_random_grid.png');
+		    game.load.tilemap('map', 'assets/map.son', null, Phaser.Tilemap.TILED_JSON);
+		    game.load.image('tiles', 'assets/ground_tiles.png', 64, 64);
 		    game.load.spritesheet('background', 'assets/ground_tiles.png', 64, 64);
 		}
 
@@ -24,6 +28,11 @@
 
 		var tileWidth = 10;
 		var tileHeight = 10;
+
+		var map;
+		var tileset;
+		var layer;
+		var pathfinder;
 
 		var stars;
 		var obstacles;
@@ -43,18 +52,31 @@
 
 		function create() {	
 
+			// game
 			game.world.setBounds(0, 0, 800, 600);
-
+/*
 			for (var i = 0; i < 800 / 64; i++) {
 				for (var j = 0; j < 600 / 64; j++) {
-		    	game.add.tileSprite(i*64, j*64, 64, 64, 'background', Math.floor(Math.random()*4 + 1));	
+		    		game.add.tileSprite(i*64, j*64, 64, 64, 'background', Math.floor(Math.random()*4 + 1));	
 		    	}	
-			}
+			}*/
+
+		    map = game.add.tilemap('map');
+    		map.addTilesetImage('walkable', 'tiles');
+		    currentTile = map.getTile(2, 3);
+		    layer = map.createLayer('walkable');
+		    layer.resizeWorld();
 
 			// room
 			game.physics.startSystem(Phaser.Physics.ARCADE);
 		    platforms = game.add.group();
 		    platforms.enableBody = true;
+
+		    var walkables = [30];
+
+		    pathfinder = game.plugins.add(Phaser.Plugin.PathFinderPlugin);
+		    pathfinder._easyStar.enableDiagonals();
+		    pathfinder.setGrid(map.layers[0].data, walkables);
 
 	    	// stars
 		    stars = game.add.group();
@@ -111,9 +133,7 @@
 			game.physics.arcade.collide(obstacles, platforms);
 
 			game.physics.arcade.overlap(player, stars, collectStar, null, this);
-		function degToRad(degrees) {
-			return degrees * Math.PI / 180;
-		}
+
 		    if (cursors.left.isDown) {
 		    	direction = getDirection(180, direction);
 		    } 
@@ -141,6 +161,22 @@
     		}
 		}
 
+		function findPathTo(tilex, tiley) {
+
+		    pathfinder.setCallbackFunction(function(path) {
+		        path = path || [];
+		        for(var i = 0, ilen = path.length; i < ilen; i++) {
+		            //map.putTile(46, path[i].x, path[i].y);
+		            //game.add.tileSprite(path[i].x, path[i].y, "tiles", 46);
+		            stars.create(path[i].x, path[i].y, 'star');
+		        }
+		        blocked = false;
+		    });
+
+		    pathfinder.preparePathCalculation([0,0], [tilex,tiley]);
+		    pathfinder.calculatePath();
+		}
+
 		function getDirection(newDiretion, oldDirection) {
 			if (oldDirection === undefined) {
 				return newDiretion;
@@ -154,6 +190,7 @@
 		}
 
 		function moveTo() {
+			findPathTo(game.input.x, game.input.y);
 			//stars.create(game.input.x, game.input.y, 'star');
 		}
 
