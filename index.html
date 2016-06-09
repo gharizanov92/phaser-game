@@ -125,7 +125,7 @@
 		    scoreText = game.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
 		    game.camera.follow(player);
 
-		    //game.input.onDown.add(findPathTo, this);
+		    game.input.onDown.add(findPathTo, this);
 		}
 
 		function update() {
@@ -211,15 +211,16 @@
 	    	// if (cursors.left.isUp && cursors.right.isUp && cursors.up.isUp && cursors.down.isUp) {
 	    	// 	player.animations.stop();
     		// }
-
+/*
 		    if (game.input.mousePointer.isDown) {
 		        blocked = true;
 		        //findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
 		        findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
-		    }
+		    }*/
 		}
 
-		function findPathTo(tilex, tiley) {
+		function findPathTo(tile) {
+			console.log(tile);
 		    pathfinder.setCallbackFunction(function(found_path) {
 		        found_path = found_path || [];
 		        path = found_path;
@@ -238,7 +239,7 @@
 
 		    pathfinder.preparePathCalculation(
 		    	[layer.getTileX(player.x + 48), layer.getTileY(player.y + 48)], 
-		    	[tilex,tiley]);
+		    	[layer.getTileX(tile.clientX), layer.getTileX(tile.clientY)]);
 		    pathfinder.calculatePath();
 		}
 
