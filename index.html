@@ -140,8 +140,8 @@
 			game.physics.arcade.collide(player, obsticles);
 
 			game.physics.arcade.overlap(player, stars, collectStar, null, this);
-			game.physics.arcade.overlap(player, waypoints, function(player, sign){sign.kill()}, null, this);
-
+			//game.physics.arcade.overlap(player, waypoints, function(player, sign){sign.kill()}, null, this);
+/*
 		    if (cursors.left.isDown) {
 		    	direction = getDirection(180, direction);
 		    } 
@@ -157,9 +157,7 @@
 		    	} else {
 		    		direction = getDirection(270, direction);
 		    	}
-		    }
-
-		    direction = game.physics.arcade.angleBetween(player, {world: {x:moveToX, y:moveToY}, x:moveToX, y:moveToY});
+		    }*/
 
 		    var offset = player.width / 2;
 		    direction = game.physics.arcade.angleBetween( 
@@ -195,9 +193,10 @@
 		    // }
 
 	    	if (Math.abs(player.x - moveToX) > 3 || Math.abs(player.y - moveToY) > 3) {
-				player.body.velocity.y = 150 * Math.sin(direction);
-				player.body.velocity.x = 150 * Math.cos(direction);
-				console.log(radToDeg(direction));
+			    if (cursors.up.isDown) {
+    				player.body.velocity.y = 150 * Math.sin(direction);
+					player.body.velocity.x = 150 * Math.cos(direction);
+			    }
 	    	} else {
 	    		player.animations.stop();
 
@@ -226,6 +225,7 @@
 		    pathfinder.setCallbackFunction(function(found_path) {
 		        found_path = found_path || [];
 		        path = found_path;
+		        waypoints.removeAll();
 		        for(var i = 0, ilen = path.length; i < ilen; i++) {
 		            //map.putTile(46, path[i].x, path[i].y);
 		            //game.add.tileSprite(path[i].x, path[i].y, "tiles", 46);
@@ -233,10 +233,13 @@
 		            waypoints.create(path[i].x * 32 - 16, path[i].y * 32 - 16, 'sign');
 		        }
 		        blocked = false;
+		        moveToX = path[0].x * 32 - 32;
+		        moveToY = path[0].y * 32 - 32;
+		        path = path.slice(1);
 		    });
 
 		    pathfinder.preparePathCalculation(
-		    	[layer.getTileX(player.x + 32), layer.getTileY(player.y + 32)], 
+		    	[layer.getTileX(player.x + 48), layer.getTileY(player.y + 48)], 
 		    	[tilex,tiley]);
 		    pathfinder.calculatePath();
 		}
