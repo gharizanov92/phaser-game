@@ -13,6 +13,7 @@
 		function preload() {
 		    game.load.spritesheet('lady gaga', 'assets/stella_walk.png', 64, 64);
 		    game.load.image('star', 'assets/star.png');
+		    game.load.image('sign', 'assets/signpost32px.png');
 		    game.load.image('grass', 'assets/grass_random_grid.png');
 		    game.load.tilemap('map', 'assets/map.son', null, Phaser.Tilemap.TILED_JSON);
 		    game.load.image('tiles', 'assets/ground_tiles.png', 64, 64);
@@ -33,8 +34,11 @@
 		var tileset;
 		var layer;
 		var pathfinder;
+		var path;
+		var direction;
 
 		var stars;
+		var waypoints;
 		var obstacles;
 		var score = 0;
 		var scoreText;
@@ -62,9 +66,9 @@
 			}*/
 
 		    map = game.add.tilemap('map');
-    		map.addTilesetImage('walkable', 'tiles');
-		    currentTile = map.getTile(2, 3);
+    		map.addTilesetImage('ground_tiles', 'tiles');
 		    layer = map.createLayer('walkable');
+		    obsticles = map.createLayer('obsticles');
 		    layer.resizeWorld();
 
 			// room
@@ -72,10 +76,11 @@
 		    platforms = game.add.group();
 		    platforms.enableBody = true;
 
-		    var walkables = [30];
+		    var walkables = [0, 22, 23, 24, 25, 26, 19, 13, 14, 7, 8, 9, 10, 11, 12, 20, 21];
 
 		    pathfinder = game.plugins.add(Phaser.Plugin.PathFinderPlugin);
 		    pathfinder._easyStar.enableDiagonals();
+		    //pathfinder._easyStar.DIAGONAL_COST = 1;
 		    pathfinder.setGrid(map.layers[0].data, walkables);
 
 	    	// stars
@@ -83,17 +88,19 @@
 		    stars.enableBody = true;
 		    stars.create(250, 210, 'star');
 
+		    waypoints = game.add.group();
+		    waypoints.enableBody = true;
+
 		    // obstacles
 		    obstacles = game.add.group();
 		    obstacles.enableBody = true;
 		    //obstacles.body.immovable = true;
-		    obstacles.create(350, 210, 'star');
-
+/*
 		    for (var i = 0; i < 5; i++) {
 		    	var x = Math.random() * 704 + 64;
 		    	var y = Math.random() * 504 + 64;
 		    	game.add.tileSprite(x, y, 64, 64, 'background', Math.floor(Math.random()*4 + 6));
-		    }
+		    }*/
 
 		    // player
 		    player = game.add.sprite(300, 200, 'lady gaga');
@@ -118,21 +125,22 @@
 		    scoreText = game.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
 		    game.camera.follow(player);
 
-		    game.input.onDown.add(moveTo, this);
+		    //game.input.onDown.add(findPathTo, this);
 		}
 
 		function update() {
 			var xspeed = 0;
 			var yspeed = 0;
-			var direction;
+			//var direction;
 			player.body.velocity.x = 0;
 			player.body.velocity.y = 0;
 
 		    game.physics.arcade.collide(player, platforms);
 			game.physics.arcade.collide(stars, platforms);
-			game.physics.arcade.collide(obstacles, platforms);
+			game.physics.arcade.collide(player, obsticles);
 
 			game.physics.arcade.overlap(player, stars, collectStar, null, this);
+			game.physics.arcade.overlap(player, waypoints, function(player, sign){sign.kill()}, null, this);
 
 		    if (cursors.left.isDown) {
 		    	direction = getDirection(180, direction);
@@ -151,29 +159,85 @@
 		    	}
 		    }
 
-			player.body.velocity.y = -150 * Math.sin(degToRad(direction));
-			player.body.velocity.x = 150 * Math.cos(degToRad(direction));
+		    direction = game.physics.arcade.angleBetween(player, {world: {x:moveToX, y:moveToY}, x:moveToX, y:moveToY});
 
-			player.animations.play(animationAngles[direction]);
+		    var offset = player.width / 2;
+		    direction = game.physics.arcade.angleBetween( 
+	    		{
+		    		world: 
+		    		{
+		    			x:player.world.x + Math.round(player.width / 2), 
+		    			y:player.world.y + Math.round(player.height / 2)
+		    		}, 
+		    		x:player.x + Math.round(player.width / 2),
+		    		y:player.y + Math.round(player.height / 2)
+		    	},
+		    	{
+		    		world: 
+		    		{
+		    			x:moveToX + Math.round(player.width / 2), 
+		    			y:moveToY + Math.round(player.height / 2)
+		    		}, 
+		    		x:moveToX + Math.round(player.width / 2), 
+		    		y:moveToY + Math.round(player.height / 2)
+		    	});
 
-	    	if (cursors.left.isUp && cursors.right.isUp && cursors.up.isUp && cursors.down.isUp) {
+		    // if (player.x < moveToX) {
+		    // 	direction = getDirection(180, direction);
+		    // } else if (player.x > moveToX) {
+		    // 	direction = getDirection(0, direction);
+		    // }
+
+		    // if (player.y < moveToY) {
+		    // 	direction = getDirection(270, direction);
+		    // } else if (player.y > moveToY) {
+		    // 	direction = getDirection(90, direction);
+		    // }
+
+	    	if (Math.abs(player.x - moveToX) > 3 || Math.abs(player.y - moveToY) > 3) {
+				player.body.velocity.y = 150 * Math.sin(direction);
+				player.body.velocity.x = 150 * Math.cos(direction);
+				console.log(radToDeg(direction));
+	    	} else {
 	    		player.animations.stop();
-    		}
+
+				if (path && path.length > 0) {
+					var nextPoint = path[0];
+					path = path.slice(1);
+					moveToX = nextPoint.x * 32 - 32;
+					moveToY = nextPoint.y * 32 - 32;
+				}
+	    	}
+
+			player.animations.play(animationAngles[radToDeg(direction)]);
+
+	    	// if (cursors.left.isUp && cursors.right.isUp && cursors.up.isUp && cursors.down.isUp) {
+	    	// 	player.animations.stop();
+    		// }
+
+		    if (game.input.mousePointer.isDown) {
+		        blocked = true;
+		        //findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
+		        findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
+		    }
 		}
 
 		function findPathTo(tilex, tiley) {
-
-		    pathfinder.setCallbackFunction(function(path) {
-		        path = path || [];
+		    pathfinder.setCallbackFunction(function(found_path) {
+		        found_path = found_path || [];
+		        path = found_path;
 		        for(var i = 0, ilen = path.length; i < ilen; i++) {
 		            //map.putTile(46, path[i].x, path[i].y);
 		            //game.add.tileSprite(path[i].x, path[i].y, "tiles", 46);
-		            stars.create(path[i].x, path[i].y, 'star');
+		            //game.add.sprite(path[i].x * 32 - 16, path[i].y * 32 - 16, 'sign');
+		            waypoints.create(path[i].x * 32 - 16, path[i].y * 32 - 16, 'sign');
 		        }
 		        blocked = false;
 		    });
 
-		    pathfinder.preparePathCalculation([0,0], [tilex,tiley]);
+		    pathfinder.preparePathCalculation(
+		    	[layer.getTileX(player.x + 32), layer.getTileY(player.y + 32)], 
+		    	[tilex,tiley]);
 		    pathfinder.calculatePath();
 		}
 
@@ -187,6 +251,13 @@
 
 		function degToRad(degrees) {
 			return degrees * Math.PI / 180;
+		}
+
+		function radToDeg(degrees) {
+			var dir = 360 - (degrees * 180 / Math.PI);
+			var direction = 45 * Math.round(dir / 45);
+			//console.log(direction);
+			return direction % 360;
 		}
 
 		function moveTo() {
