@@ -4,11 +4,12 @@
 	<title>Game</title>
 </head>
 <body>
+	<div id="game"></div>
 	<script type="text/javascript" src="js/phaser.min.js"></script>
 	<script type="text/javascript" src="js/easystar-0.3.0.min.js"></script>
 	<script type="text/javascript" src="js/phaser_pathfinding-0.2.0.min.js"></script>
 	<script type="text/javascript">
-		var game = new Phaser.Game(800, 600, Phaser.CANVAS, '', { preload: preload, create: create, update: update });
+		var game = new Phaser.Game(800, 480, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update });
 
 		function preload() {
 		    game.load.spritesheet('lady gaga', 'assets/stella_walk.png', 64, 64);
@@ -57,7 +58,7 @@
 		function create() {	
 
 			// game
-			game.world.setBounds(0, 0, 800, 600);
+			game.world.setBounds(0, 0, 800, 610);
 /*
 			for (var i = 0; i < 800 / 64; i++) {
 				for (var j = 0; j < 600 / 64; j++) {
@@ -69,7 +70,6 @@
     		map.addTilesetImage('ground_tiles', 'tiles');
 		    layer = map.createLayer('walkable');
 		    obsticles = map.createLayer('obsticles');
-		    layer.resizeWorld();
 
 			// room
 			game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -104,7 +104,6 @@
 
 		    // player
 		    player = game.add.sprite(300, 200, 'lady gaga');
-		    player.scale.setTo(1,1);
 
 		    //  We need to enable physics on the player
 		    game.physics.arcade.enable(player);
@@ -220,7 +219,6 @@
 		}
 
 		function findPathTo(tile) {
-			console.log(tile);
 		    pathfinder.setCallbackFunction(function(found_path) {
 		        found_path = found_path || [];
 		        path = found_path;
@@ -236,10 +234,11 @@
 		        moveToY = path[0].y * 32 - 32;
 		        path = path.slice(1);
 		    });
-
+		    var offsetY = game.camera.y;
+		    var offsetX = game.camera.x;
 		    pathfinder.preparePathCalculation(
 		    	[layer.getTileX(player.x + 48), layer.getTileY(player.y + 48)], 
-		    	[layer.getTileX(tile.clientX), layer.getTileX(tile.clientY)]);
+		    	[layer.getTileX(tile.pageX + offsetX), layer.getTileX(tile.pageY + offsetY)]);
 		    pathfinder.calculatePath();
 		}
 
@@ -258,7 +257,6 @@
 		function radToDeg(degrees) {
 			var dir = 360 - (degrees * 180 / Math.PI);
 			var direction = 45 * Math.round(dir / 45);
-			//console.log(direction);
 			return direction % 360;
 		}
 
