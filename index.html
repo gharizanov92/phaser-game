@@ -15,7 +15,7 @@
 		    game.load.image('star', 'assets/star.png');
 		    game.load.image('sign', 'assets/signpost32px.png');
 		    game.load.image('grass', 'assets/grass_random_grid.png');
-		    game.load.tilemap('map', 'assets/map.son', null, Phaser.Tilemap.TILED_JSON);
+		    game.load.tilemap('map', 'assets/map.json', null, Phaser.Tilemap.TILED_JSON);
 		    game.load.image('tiles', 'assets/ground_tiles.png', 64, 64);
 		    game.load.spritesheet('background', 'assets/ground_tiles.png', 64, 64);
 		}
@@ -193,10 +193,8 @@
 		    // }
 
 	    	if (Math.abs(player.x - moveToX) > 3 || Math.abs(player.y - moveToY) > 3) {
-			    if (cursors.up.isDown) {
-    				player.body.velocity.y = 150 * Math.sin(direction);
-					player.body.velocity.x = 150 * Math.cos(direction);
-			    }
+				player.body.velocity.y = 150 * Math.sin(direction);
+				player.body.velocity.x = 150 * Math.cos(direction);
 	    	} else {
 	    		player.animations.stop();
 
