@@ -8,22 +8,33 @@
 	<script type="text/javascript" src="js/phaser.min.js"></script>
 	<script type="text/javascript" src="js/easystar-0.3.0.min.js"></script>
 	<script type="text/javascript" src="js/phaser_pathfinding-0.2.0.min.js"></script>
+	<script type="text/javascript" src="js/tanks.js"></script>
 	<script type="text/javascript">
 		var game = new Phaser.Game(800, 480, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update });
 
 		function preload() {
+			game.load.image('goblein', 'assets/cup.png');
 		    game.load.spritesheet('lady gaga', 'assets/stella_walk.png', 64, 64);
-		    game.load.image('star', 'assets/star.png');
-		    game.load.image('sign', 'assets/signpost32px.png');
+		    game.load.image('star', 'assets/diamond.png');
+		    game.load.image('waypoint', 'assets/waypoint.png');
 		    game.load.image('grass', 'assets/grass_random_grid.png');
 		    game.load.tilemap('map', 'assets/map.json', null, Phaser.Tilemap.TILED_JSON);
 		    game.load.image('tiles', 'assets/ground_tiles.png', 64, 64);
 		    game.load.spritesheet('background', 'assets/ground_tiles.png', 64, 64);
+
+			game.load.atlas('enemy', 'assets/tanks/enemy-tanks.png', 'assets/tanks/tanks.json');
+			game.load.image('bullet', 'assets/tanks/bullet.png');
+			game.load.spritesheet('kaboom', 'assets/tanks/explosion.png', 64, 64, 23);
 		}
+
+		var TILE_WIDTH = 32;
+		var TILE_HEIGHT = 32;
 
 		var player;
 		var platforms;
 		var cursors;
+
+		var goblein;
 
 		var moveToX = 300;
 		var moveToY = 200;
@@ -44,6 +55,14 @@
 		var score = 0;
 		var scoreText;
 
+		var enemies;
+		var enemyBullets;
+		var enemiesTotal = 0;
+		var enemiesAlive = 0;
+		var explosions;
+
+		var bullets;
+
 		var animationAngles = {
 			0: 'right',
 			45: 'upRight',
@@ -53,12 +72,12 @@
 			225: 'downLeft',
 			270: 'down',
 			315: 'downRight'
-		}
+		};
 
 		function create() {	
 
 			// game
-			game.world.setBounds(0, 0, 800, 610);
+			game.world.setBounds(0, 0, 800, 480);
 /*
 			for (var i = 0; i < 800 / 64; i++) {
 				for (var j = 0; j < 600 / 64; j++) {
@@ -77,10 +96,10 @@
 		    platforms.enableBody = true;
 
 		    var walkables = [0, 22, 23, 24, 25, 26, 19, 13, 14, 7, 8, 9, 10, 11, 12, 20, 21];
+		    //var walkables = [127];
 
 		    pathfinder = game.plugins.add(Phaser.Plugin.PathFinderPlugin);
 		    pathfinder._easyStar.enableDiagonals();
-		    //pathfinder._easyStar.DIAGONAL_COST = 1;
 		    pathfinder.setGrid(map.layers[0].data, walkables);
 
 	    	// stars
@@ -94,13 +113,15 @@
 		    // obstacles
 		    obstacles = game.add.group();
 		    obstacles.enableBody = true;
-		    //obstacles.body.immovable = true;
 /*
 		    for (var i = 0; i < 5; i++) {
 		    	var x = Math.random() * 704 + 64;
 		    	var y = Math.random() * 504 + 64;
 		    	game.add.tileSprite(x, y, 64, 64, 'background', Math.floor(Math.random()*4 + 6));
 		    }*/
+
+			//obstacles.body.immovable = true;
+			goblein = game.add.sprite(364, 220, 'goblein');
 
 		    // player
 		    player = game.add.sprite(300, 200, 'lady gaga');
@@ -125,6 +146,48 @@
 		    game.camera.follow(player);
 
 		    game.input.onDown.add(findPathTo, this);
+
+			// enemies
+			//  The enemies bullet group
+			enemyBullets = game.add.group();
+			enemyBullets.enableBody = true;
+			enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
+			enemyBullets.createMultiple(100, 'bullet');
+
+			enemyBullets.setAll('anchor.x', 0.5);
+			enemyBullets.setAll('anchor.y', 0.5);
+			enemyBullets.setAll('outOfBoundsKill', true);
+			enemyBullets.setAll('checkWorldBounds', true);
+
+			//  Create some baddies to waste :)
+			enemies = [];
+
+			enemiesTotal = 1;
+			enemiesAlive = 1;
+
+			for (var i = 0; i < enemiesTotal; i++) {
+				enemies.push(new EnemyTank(i, game, player, enemyBullets, pathfinder));
+			}
+
+			//  Our bullet group
+			bullets = game.add.group();
+			bullets.enableBody = true;
+			bullets.physicsBodyType = Phaser.Physics.ARCADE;
+			bullets.createMultiple(30, 'bullet', 0, false);
+			bullets.setAll('anchor.x', 0.5);
+			bullets.setAll('anchor.y', 0.5);
+			bullets.setAll('outOfBoundsKill', true);
+			bullets.setAll('checkWorldBounds', true);
+
+			//  Explosion pool
+			explosions = game.add.group();
+
+			for (var i = 0; i < 10; i++)
+			{
+				var explosionAnimation = explosions.create(0, 0, 'kaboom', [0], false);
+				explosionAnimation.anchor.setTo(0.5, 0.5);
+				explosionAnimation.animations.add('kaboom');
+			}
 		}
 
 		function update() {
@@ -139,7 +202,14 @@
 			game.physics.arcade.collide(player, obsticles);
 
 			game.physics.arcade.overlap(player, stars, collectStar, null, this);
-			//game.physics.arcade.overlap(player, waypoints, function(player, sign){sign.kill()}, null, this);
+			game.physics.arcade.overlap(player, waypoints, function(player, waypoint){
+				if (!waypoint.markedForKill) {
+					setTimeout(function() {
+						waypoint.kill();
+					}, 50);
+				}
+				waypoint.markedForKill = true;
+			}, null, this);
 /*
 		    if (cursors.left.isDown) {
 		    	direction = getDirection(180, direction);
@@ -158,26 +228,10 @@
 		    	}
 		    }*/
 
-		    var offset = player.width / 2;
-		    direction = game.physics.arcade.angleBetween( 
-	    		{
-		    		world: 
-		    		{
-		    			x:player.world.x + Math.round(player.width / 2), 
-		    			y:player.world.y + Math.round(player.height / 2)
-		    		}, 
-		    		x:player.x + Math.round(player.width / 2),
-		    		y:player.y + Math.round(player.height / 2)
-		    	},
-		    	{
-		    		world: 
-		    		{
-		    			x:moveToX + Math.round(player.width / 2), 
-		    			y:moveToY + Math.round(player.height / 2)
-		    		}, 
-		    		x:moveToX + Math.round(player.width / 2), 
-		    		y:moveToY + Math.round(player.height / 2)
-		    	});
+			var from = new Phaser.Point(player.x + Math.round(player.width / 2), player.y + Math.round(player.height / 2));
+			var to = new Phaser.Point(moveToX + Math.round(player.width / 2), moveToY + Math.round(player.height / 2));
+
+			direction = game.physics.arcade.angleBetween(from, to);
 
 		    // if (player.x < moveToX) {
 		    // 	direction = getDirection(180, direction);
@@ -199,9 +253,9 @@
 
 				if (path && path.length > 0) {
 					var nextPoint = path[0];
+					moveToX = nextPoint.x * TILE_WIDTH - TILE_WIDTH;
+					moveToY = nextPoint.y * TILE_HEIGHT - TILE_HEIGHT;
 					path = path.slice(1);
-					moveToX = nextPoint.x * 32 - 32;
-					moveToY = nextPoint.y * 32 - 32;
 				}
 	    	}
 
@@ -216,6 +270,25 @@
 		        //findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
 		        findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
 		    }*/
+			/*if (game.input.activePointer.isDown) {
+				findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
+			}*/
+
+			// enemies
+			//game.physics.arcade.overlap(enemyBullets, player, bulletHitPlayer, null, this);
+
+			enemiesAlive = 0;
+
+			for (var i = 0; i < enemies.length; i++)
+			{
+				if (enemies[i].alive)
+				{
+					enemiesAlive++;
+					//game.physics.arcade.collide(tank, enemies[i].tank);
+					//game.physics.arcade.overlap(bullets, enemies[i].tank, bulletHitEnemy, null, this);
+					enemies[i].update();
+				}
+			}
 		}
 
 		function findPathTo(tile) {
@@ -223,23 +296,30 @@
 		        found_path = found_path || [];
 		        path = found_path;
 		        waypoints.removeAll();
+				blocked = false;
+				path = path.slice(1);
+				moveToX = path[0].x * TILE_WIDTH - TILE_WIDTH;
+				moveToY = path[0].y * TILE_HEIGHT - TILE_HEIGHT;
+
 		        for(var i = 0, ilen = path.length; i < ilen; i++) {
-		            //map.putTile(46, path[i].x, path[i].y);
-		            //game.add.tileSprite(path[i].x, path[i].y, "tiles", 46);
-		            //game.add.sprite(path[i].x * 32 - 16, path[i].y * 32 - 16, 'sign');
-		            waypoints.create(path[i].x * 32 - 16, path[i].y * 32 - 16, 'sign');
+		            waypoints.create(path[i].x * TILE_WIDTH - 3, path[i].y * TILE_HEIGHT + 28, 'waypoint');
 		        }
-		        blocked = false;
-		        moveToX = path[0].x * 32 - 32;
-		        moveToY = path[0].y * 32 - 32;
-		        path = path.slice(1);
 		    });
 		    var offsetY = game.camera.y;
 		    var offsetX = game.camera.x;
 		    pathfinder.preparePathCalculation(
 		    	[layer.getTileX(player.x + 48), layer.getTileY(player.y + 48)], 
-		    	[layer.getTileX(tile.pageX + offsetX), layer.getTileX(tile.pageY + offsetY)]);
+		    	[layer.getTileX(tile.clientX + offsetX), layer.getTileY(tile.clientY + offsetY)]);
 		    pathfinder.calculatePath();
+/*			var offsetY = game.camera.y;
+			var offsetX = game.camera.x;
+			var from = new Phaser.Point(player.x, player.y);
+			var to = new Phaser.Point(tile.pageX + offsetX, layer.getTileY(tile.pageY + offsetY));
+			findPathTo()*/
+		}
+
+		function fidPathTo(from, to) {
+
 		}
 
 		function getDirection(newDiretion, oldDirection) {
