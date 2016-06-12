@@ -8,12 +8,14 @@
 	<script type="text/javascript" src="js/phaser.min.js"></script>
 	<script type="text/javascript" src="js/easystar-0.3.0.min.js"></script>
 	<script type="text/javascript" src="js/phaser_pathfinding-0.2.0.min.js"></script>
+	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript" src="js/tanks.js"></script>
 	<script type="text/javascript">
 		var game = new Phaser.Game(800, 480, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update });
 
 		function preload() {
-			game.load.image('goblein', 'assets/cup.png');
+			game.load.image('cup', 'assets/cup.png');
+			game.load.image('goblein', 'assets/goblein.jpg');
 		    game.load.spritesheet('lady gaga', 'assets/stella_walk.png', 64, 64);
 		    game.load.image('star', 'assets/diamond.png');
 		    game.load.image('waypoint', 'assets/waypoint.png');
@@ -121,10 +123,12 @@
 		    }*/
 
 			//obstacles.body.immovable = true;
+			goblein = game.add.sprite(364, 220, 'cup');
 			goblein = game.add.sprite(364, 220, 'goblein');
 
 		    // player
 		    player = game.add.sprite(300, 200, 'lady gaga');
+			player.scale.setTo(0.75, 0.75);
 
 		    //  We need to enable physics on the player
 		    game.physics.arcade.enable(player);
@@ -142,10 +146,10 @@
 
 		    cursors = game.input.keyboard.createCursorKeys();
 
-		    scoreText = game.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
-		    game.camera.follow(player);
+		    //scoreText = game.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
+		    //game.camera.follow(player);
 
-		    game.input.onDown.add(findPathTo, this);
+		    //game.input.onDown.add(findPathTo, this);
 
 			// enemies
 			//  The enemies bullet group
@@ -154,16 +158,15 @@
 			enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
 			enemyBullets.createMultiple(100, 'bullet');
 
-			enemyBullets.setAll('anchor.x', 0.5);
-			enemyBullets.setAll('anchor.y', 0.5);
+			//enemyBullets.setAll('anchor.x', 0.5);
+			//enemyBullets.setAll('anchor.y', 0.5);
 			enemyBullets.setAll('outOfBoundsKill', true);
 			enemyBullets.setAll('checkWorldBounds', true);
 
-			//  Create some baddies to waste :)
 			enemies = [];
 
-			enemiesTotal = 1;
-			enemiesAlive = 1;
+			enemiesTotal = 2;
+			enemiesAlive = 2;
 
 			for (var i = 0; i < enemiesTotal; i++) {
 				enemies.push(new EnemyTank(i, game, player, enemyBullets, pathfinder));
@@ -191,18 +194,16 @@
 		}
 
 		function update() {
-			var xspeed = 0;
-			var yspeed = 0;
-			//var direction;
 			player.body.velocity.x = 0;
 			player.body.velocity.y = 0;
 
 		    game.physics.arcade.collide(player, platforms);
 			game.physics.arcade.collide(stars, platforms);
 			game.physics.arcade.collide(player, obsticles);
-
 			game.physics.arcade.overlap(player, stars, collectStar, null, this);
-			game.physics.arcade.overlap(player, waypoints, function(player, waypoint){
+
+			// show player movement
+			game.physics.arcade.overlap(enemies, waypoints, function(player, waypoint){
 				if (!waypoint.markedForKill) {
 					setTimeout(function() {
 						waypoint.kill();
@@ -210,28 +211,32 @@
 				}
 				waypoint.markedForKill = true;
 			}, null, this);
-/*
-		    if (cursors.left.isDown) {
-		    	direction = getDirection(180, direction);
-		    } 
-		    if (cursors.right.isDown) {
-		        direction = getDirection(0, direction);
-		    } 
-		    if (cursors.up.isDown) {
-		        direction = getDirection(90, direction);
-		    } 
-		    if (cursors.down.isDown) {
-		    	if (cursors.right.isDown) { 
-		    		direction = 315;
-		    	} else {
-		    		direction = getDirection(270, direction);
-		    	}
-		    }*/
 
-			var from = new Phaser.Point(player.x + Math.round(player.width / 2), player.y + Math.round(player.height / 2));
-			var to = new Phaser.Point(moveToX + Math.round(player.width / 2), moveToY + Math.round(player.height / 2));
-
-			direction = game.physics.arcade.angleBetween(from, to);
+			if (cursors.up.isDown) {
+				for (var i = 0; i < enemies.length; i++) {
+					var randomX = Math.floor(Math.random() * 732) + 64;
+					var randomY = Math.floor(Math.random() * 412) + 64;
+					enemies[i].moveTo(new Phaser.Point(randomX, randomY));
+					waypoints.removeAll();
+				}
+			}
+			/*
+                        if (cursors.left.isDown) {
+                            direction = getDirection(180, direction);
+                        }
+                        if (cursors.right.isDown) {
+                            direction = getDirection(0, direction);
+                        }
+                        if (cursors.up.isDown) {
+                            direction = getDirection(90, direction);
+                        }
+                        if (cursors.down.isDown) {
+                            if (cursors.right.isDown) {
+                                direction = 315;
+                            } else {
+                                direction = getDirection(270, direction);
+                            }
+                        }*/
 
 		    // if (player.x < moveToX) {
 		    // 	direction = getDirection(180, direction);
@@ -245,12 +250,16 @@
 		    // 	direction = getDirection(90, direction);
 		    // }
 
-	    	if (Math.abs(player.x - moveToX) > 3 || Math.abs(player.y - moveToY) > 3) {
-				player.body.velocity.y = 150 * Math.sin(direction);
-				player.body.velocity.x = 150 * Math.cos(direction);
+			// if we've reached the next point
+	    	if (this.game.physics.arcade.distanceBetween(player, new Phaser.Point(moveToX, moveToY)) > 3) {
+				//player.body.velocity.y = 150 * Math.sin(direction);
+				//player.body.velocity.x = 150 * Math.cos(direction);
+				var from = new Phaser.Point(player.x + Math.round(player.width / 2), player.y + Math.round(player.height / 2));
+				var to = new Phaser.Point(moveToX + Math.round(player.width / 2), moveToY + Math.round(player.height / 2));
+				direction = game.physics.arcade.angleBetween(from, to);
+				game.physics.arcade.velocityFromRotation(direction, 150, player.body.velocity);
 	    	} else {
 	    		player.animations.stop();
-
 				if (path && path.length > 0) {
 					var nextPoint = path[0];
 					moveToX = nextPoint.x * TILE_WIDTH - TILE_WIDTH;
@@ -270,9 +279,9 @@
 		        //findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
 		        findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
 		    }*/
-			/*if (game.input.activePointer.isDown) {
-				findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
-			}*/
+			if (game.input.activePointer.isDown) {
+				findPath(new Phaser.Point(player.x + 48, player.y + 48), new Phaser.Point(game.input.activePointer.clientX, game.input.activePointer.clientY), createPathForPlayer);
+			}
 
 			// enemies
 			//game.physics.arcade.overlap(enemyBullets, player, bulletHitPlayer, null, this);
@@ -291,58 +300,18 @@
 			}
 		}
 
-		function findPathTo(tile) {
-		    pathfinder.setCallbackFunction(function(found_path) {
-		        found_path = found_path || [];
-		        path = found_path;
-		        waypoints.removeAll();
-				blocked = false;
-				path = path.slice(1);
-				moveToX = path[0].x * TILE_WIDTH - TILE_WIDTH;
-				moveToY = path[0].y * TILE_HEIGHT - TILE_HEIGHT;
-
-		        for(var i = 0, ilen = path.length; i < ilen; i++) {
-		            waypoints.create(path[i].x * TILE_WIDTH - 3, path[i].y * TILE_HEIGHT + 28, 'waypoint');
-		        }
-		    });
-		    var offsetY = game.camera.y;
-		    var offsetX = game.camera.x;
-		    pathfinder.preparePathCalculation(
-		    	[layer.getTileX(player.x + 48), layer.getTileY(player.y + 48)], 
-		    	[layer.getTileX(tile.clientX + offsetX), layer.getTileY(tile.clientY + offsetY)]);
-		    pathfinder.calculatePath();
-/*			var offsetY = game.camera.y;
-			var offsetX = game.camera.x;
-			var from = new Phaser.Point(player.x, player.y);
-			var to = new Phaser.Point(tile.pageX + offsetX, layer.getTileY(tile.pageY + offsetY));
-			findPathTo()*/
-		}
-
-		function fidPathTo(from, to) {
-
-		}
-
-		function getDirection(newDiretion, oldDirection) {
-			if (oldDirection === undefined) {
-				return newDiretion;
-			} else {
-				return (newDiretion + oldDirection) / 2;
-			}
-		}
-
-		function degToRad(degrees) {
-			return degrees * Math.PI / 180;
-		}
-
-		function radToDeg(degrees) {
-			var dir = 360 - (degrees * 180 / Math.PI);
-			var direction = 45 * Math.round(dir / 45);
-			return direction % 360;
-		}
-
-		function moveTo() {
-			findPathTo(game.input.x, game.input.y);
-			//stars.create(game.input.x, game.input.y, 'star');
+		function createPathForPlayer(found_path) {
+			found_path = found_path || [];
+			path = found_path;
+			//waypoints.removeAll();
+			blocked = false;
+			path = path.slice(1);
+			moveToX = path[0].x * TILE_WIDTH - TILE_WIDTH;
+			moveToY = path[0].y * TILE_HEIGHT - TILE_HEIGHT;
+/*
+			for(var i = 0, ilen = path.length; i < ilen; i++) {
+				waypoints.create(path[i].x * TILE_WIDTH - 3, path[i].y * TILE_HEIGHT + 28, 'waypoint');
+			}*/
 		}
 
 		function collectStar (player, star) {
@@ -354,7 +323,7 @@
 		    stars.create(x, y, 'star');
 
 	        score += 10;
-    		scoreText.text = 'Score: ' + score;
+    		//scoreText.text = 'Score: ' + score;
 		}
 
 	</script>
