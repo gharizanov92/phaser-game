@@ -2,6 +2,11 @@
  * Created by Kayne on 12.6.2016 ã..
  */
 
+ function toggleFullscreen() {
+    game.scale.startFullScreen(false);
+    console.log(game.camera.width);
+}
+
 function getDirection(newDiretion, oldDirection) {
     if (oldDirection === undefined) {
         return newDiretion;
@@ -18,6 +23,12 @@ function radToDeg(degrees) {
     var dir = 360 - (degrees * 180 / Math.PI);
     var direction = 45 * Math.round(dir / 45);
     return direction % 360;
+}
+
+function createExplosionAt(x, y){
+    var explosionAnimation = explosions.getFirstExists(false);
+    explosionAnimation.reset(x, y);
+    explosionAnimation.play('kaboom', 30, false, true);
 }
 
 function findPath(from, to, cb) {

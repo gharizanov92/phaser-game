@@ -11,7 +11,7 @@
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript" src="js/tanks.js"></script>
 	<script type="text/javascript">
-		var game = new Phaser.Game(800, 480, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update });
+		var game = new Phaser.Game(800, 480, Phaser.AUTO, 'game', { preload: preload, create: create, update: update });
 
 		function preload() {
 			game.load.image('cup', 'assets/cup.png');
@@ -63,6 +63,9 @@
 		var enemiesAlive = 0;
 		var explosions;
 
+		var nextTankSpawn = 5000;
+		var tankRespawnRate = 5000;
+
 		var bullets;
 
 		var animationAngles = {
@@ -77,6 +80,9 @@
 		};
 
 		function create() {	
+
+			game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
+			// game.input.onUp.add(toggleFullscreen, this);
 
 			// game
 			game.world.setBounds(0, 0, 800, 480);
@@ -158,20 +164,21 @@
 			enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
 			enemyBullets.createMultiple(100, 'bullet');
 
-			//enemyBullets.setAll('anchor.x', 0.5);
-			//enemyBullets.setAll('anchor.y', 0.5);
+			enemyBullets.setAll('anchor.x', 0.5);
+			enemyBullets.setAll('anchor.y', 0.5);
 			enemyBullets.setAll('outOfBoundsKill', true);
 			enemyBullets.setAll('checkWorldBounds', true);
 			//enemyBullets.setAll('scale', (0.5, 0.5));
-			//bullet.scale.setTo(0.5, 0.5);
+			//bullet.scale.set(0.5, 0.5);
 
 			enemies = [];
 
-			enemiesTotal = 2;
-			enemiesAlive = 2;
+			enemiesTotal = 1;
+			enemiesAlive = 1;
 
 			for (var i = 0; i < enemiesTotal; i++) {
-				enemies.push(new EnemyTank(i, game, player, enemyBullets, pathfinder));
+				enemies.push(new EnemyTank(i, game, player, goblein, enemyBullets, pathfinder));
+				//enemies[i].moveTo(new Phaser.Point(goblein.x, goblein.y + 64));
 			}
 
 			//  Our bullet group
@@ -193,6 +200,17 @@
 				explosionAnimation.anchor.setTo(0.5, 0.5);
 				explosionAnimation.animations.add('kaboom');
 			}
+
+			game.input.onUp.add(function(){
+				var bullet = this.bullets.getFirstDead();
+            	bullet.reset(player.x, player.y);
+		        var xDist = player.x + 320 * Math.cos(direction);
+	        	var yDist = player.y + 320 * Math.sin(direction);
+	        	var target = new Phaser.Point(xDist, yDist);
+	        	console.log(target);
+	        	console.log(player);
+            	bullet.rotation = this.game.physics.arcade.moveToObject(bullet, target, 400);
+			})
 		}
 
 		function update() {
@@ -203,6 +221,8 @@
 			game.physics.arcade.collide(stars, platforms);
 			game.physics.arcade.collide(player, obsticles);
 			game.physics.arcade.overlap(player, stars, collectStar, null, this);
+
+			game.physics.arcade.overlap(enemyBullets, player, bulletHitPlayer, null, this);
 
 			// show player movement
 			game.physics.arcade.overlap(enemies, waypoints, function(player, waypoint){
@@ -282,7 +302,7 @@
 		        findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
 		    }*/
 			if (game.input.activePointer.isDown) {
-				findPath(new Phaser.Point(player.x + 48, player.y + 48), new Phaser.Point(game.input.activePointer.clientX, game.input.activePointer.clientY), createPathForPlayer);
+				findPath(new Phaser.Point(player.x + 48, player.y + 48), new Phaser.Point(game.input.activePointer.pageX, game.input.activePointer.pageY), createPathForPlayer);
 			}
 
 			// enemies
@@ -296,10 +316,37 @@
 				{
 					enemiesAlive++;
 					//game.physics.arcade.collide(tank, enemies[i].tank);
-					//game.physics.arcade.overlap(bullets, enemies[i].tank, bulletHitEnemy, null, this);
+					game.physics.arcade.overlap(bullets, enemies[i].tank, bulletHitEnemy, null, this);
 					enemies[i].update();
 				}
 			}
+
+			if (game.time.now > nextTankSpawn) {
+				nextTankSpawn = game.time.now + tankRespawnRate;
+				enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder));
+			}
+		}
+
+		function bulletHitPlayer(player, bullet) {
+		    bullet.kill();
+	        var xDist = 32 * Math.cos(bullet.rotation);
+	        var yDist = - 32 * Math.sin(bullet.rotation);
+	        createExplosionAt(bullet.x + xDist, bullet.y - yDist);
+		}
+
+		function bulletHitEnemy (tank, bullet) {
+
+		    bullet.kill();
+	        var xDist = 32 * Math.cos(bullet.rotation);
+	        var yDist = - 32 * Math.sin(bullet.rotation);
+	        createExplosionAt(bullet.x + xDist, bullet.y - yDist);
+	        console.log(tank.name);
+	        enemies[tank.name].damage();
+	        enemies.forEach(function(enemy, i) {
+	        	if (enemy && enemy.name == tank.name) {
+					enemies[i].damage();
+	        	}
+	        });
 		}
 
 		function createPathForPlayer(found_path) {

@@ -5,21 +5,43 @@ function getMidPoint(obj) {
     return new Phaser.Point(obj.x + obj.width / 2, obj.y + obj.height / 2);
 }
 
-EnemyTank = function (index, game, target, bullets, pathfinder) {
+EnemyTank = function (index, game, target, goblein, bullets, pathfinder) {
 
     this.pathfinder = pathfinder;
 
     this.path = [];
 
-    var x = game.world.randomX;
-    var y = game.world.randomY;
+/*    isMirroredX = Math.round(Math.random());
+    isMirroredY = Math.round(Math.random());
+    var maxX = game.width - 32;
+    var maxY = game.height - 32;
+    coords = [
+        isMirroredX*maxX, game.world.randomY*maxY, 
+        game.world.randomX*maxX, isMirroredY*maxY
+    ];
+
+    var x = coords[0];
+    var y = coords[1];*/
+
+    var coin = Math.round(Math.random());
+    var choice = Math.round(Math.random());
+    var x = [];
+    var y = [];
+    x[0] = game.world.randomX * coin;
+    x[1] = game.width - 32;
+    y[0] = game.height - 32;
+    y[1] = game.world.randomY * Math.abs(coin - 1);
+    coin = Math.round(Math.random());
+    x = x[coin];
+    y = y[coin];
 
     this.game = game;
-    this.health = 3;
+    this.health = 2;
     this.target = target;
+    this.goblein = goblein;
     this.bullets = bullets;
-    this.fireRate = 5000;
-    this.nextFire = 5000;
+    this.fireRate = 2000;
+    this.nextFire = 2000;
     this.alive = true;
 
     this.shadow = game.add.sprite(x, y, 'enemy', 'shadow');
@@ -41,6 +63,7 @@ EnemyTank = function (index, game, target, bullets, pathfinder) {
 
     this.tank.angle = 90;
 
+    this.moveTo(new Phaser.Point(goblein.x, goblein.y + 64));
     //game.physics.arcade.velocityFromRotation(this.tank.rotation, 50, this.tank.body.velocity);
 
 };
@@ -55,9 +78,10 @@ EnemyTank.prototype.damage = function() {
 
         this.shadow.kill();
         this.tank.kill();
-        this.turret.kill();
 
         return true;
+    } else {
+        this.turret.kill();
     }
 
     return false;
@@ -85,7 +109,7 @@ EnemyTank.prototype.update = function() {
 
             bullet.reset(this.turret.x, this.turret.y);
 
-            bullet.rotation = this.game.physics.arcade.moveToObject(bullet, getMidPoint(this.target), 300);
+            bullet.rotation = this.game.physics.arcade.moveToObject(bullet, getMidPoint(this.target), 200);
         }
     }
 
@@ -97,7 +121,7 @@ EnemyTank.prototype.update = function() {
             var from = new Phaser.Point(tank.x + Math.round(tank.width / 2), tank.y + Math.round(tank.height / 2));
             var to = new Phaser.Point(moveToX + Math.round(tank.width / 2), moveToY + Math.round(tank.height / 2));
             tank.angle = game.physics.arcade.angleBetween(from, to);
-            game.physics.arcade.velocityFromRotation(tank.angle, 50, tank.body.velocity);
+            game.physics.arcade.velocityFromRotation(tank.angle, 7, tank.body.velocity);
             this.tank.rotation = tank.angle;
         } else {
             if (this.path && this.path.length > 0) {
