@@ -68,8 +68,10 @@
 
 		var nextFire = 0;
 		var fireRate = 500;
+		var canShoot = false;
 
 		var bullets;
+		var graphics;
 
 		var animationAngles = {
 			0: 'right',
@@ -95,6 +97,11 @@
 		    		game.add.tileSprite(i*64, j*64, 64, 64, 'background', Math.floor(Math.random()*4 + 1));	
 		    	}	
 			}*/
+
+			graphics = game.add.graphics(0, 0);		   
+			graphics.lineStyle(2, 0x0000FF, 0.5);
+    		graphics.drawRect(10, 10, 100, 100);
+
 
 		    map = game.add.tilemap('map');
     		map.addTilesetImage('ground_tiles', 'tiles');
@@ -208,16 +215,22 @@
 			game.input.onDown.add(moveTo);
 
 			game.input.onUp.add(function() {
-				if (game.time.now > nextFire) {
+				if (canShoot && game.time.now > nextFire) {
 					nextFire = game.time.now + fireRate;
 					var bullet = this.bullets.getFirstDead();
 	            	bullet.reset(player.x, player.y);
 	            	bullet.rotation = game.physics.arcade.moveToPointer(bullet, 400);
 				}
+				canShoot = false;
 			});
 		}
 
 		function update() {
+			//graphics = game.add.graphics(0, 0);
+    		//graphics.clear();
+		    graphics.lineStyle(2, 0x0000FF, 0.5);
+    		graphics.drawRect(1, 1, game.time.now / 100, game.time.now / 100);
+
 			player.body.velocity.x = 0;
 			player.body.velocity.y = 0;
 
@@ -279,7 +292,7 @@
 		    // }
 
 			// if we've reached the next point
-	    	if (this.game.physics.arcade.distanceBetween(player, new Phaser.Point(moveToX, moveToY)) > 3) {
+	    	if (game.physics.arcade.distanceBetween(player, new Phaser.Point(moveToX, moveToY)) > 3) {
 				//player.body.velocity.y = 150 * Math.sin(direction);
 				//player.body.velocity.x = 150 * Math.cos(direction);
 				var from = new Phaser.Point(player.x + Math.round(player.width / 2), player.y + Math.round(player.height / 2));
@@ -323,7 +336,7 @@
 					enemiesAlive++;
 					//game.physics.arcade.collide(tank, enemies[i].tank);
 					game.physics.arcade.overlap(bullets, enemies[i].tank, bulletHitEnemy, null, this);
-					//game.physics.arcade.overlap(enemyBullets, enemies[i].tank, bulletHitEnemy, null, this);
+					game.physics.arcade.overlap(enemyBullets, enemies[i].tank, bulletHitEnemy, null, this);
 					enemies[i].update();
 				}
 			}
@@ -335,7 +348,12 @@
 		}
 
 		function moveTo(tile) {
-			findPath(new Phaser.Point(player.x + 48, player.y + 48), new Phaser.Point(game.input.activePointer.pageX, game.input.activePointer.pageY), createPathForPlayer);
+			
+			if (game.physics.arcade.distanceBetween(player, game.input.activePointer) < 64) {
+				canShoot = true;
+			} else {
+				findPath(new Phaser.Point(player.x + 48, player.y + 48), new Phaser.Point(game.input.activePointer.pageX, game.input.activePointer.pageY), createPathForPlayer);
+			}
 		}
 
 		function bulletHitPlayer(player, bullet) {
