@@ -66,6 +66,9 @@
 		var nextTankSpawn = 5000;
 		var tankRespawnRate = 5000;
 
+		var nextFire = 100;
+		var fireRate = 100;
+
 		var bullets;
 
 		var animationAngles = {
@@ -207,9 +210,8 @@
 		        var xDist = player.x + 320 * Math.cos(direction);
 	        	var yDist = player.y + 320 * Math.sin(direction);
 	        	var target = new Phaser.Point(xDist, yDist);
-	        	console.log(target);
-	        	console.log(player);
-            	bullet.rotation = this.game.physics.arcade.moveToObject(bullet, target, 400);
+            	//bullet.rotation = this.game.physics.arcade.moveToObject(bullet, target, 400);
+            	bullet.rotation = game.physics.arcade.moveToPointer(bullet, 400);
 			})
 		}
 
