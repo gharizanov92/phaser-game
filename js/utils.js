@@ -29,6 +29,7 @@ function createExplosionAt(x, y){
     var explosionAnimation = explosions.getFirstExists(false);
     explosionAnimation.reset(x, y);
     explosionAnimation.play('kaboom', 30, false, true);
+    explosionAnimation.bringToTop();
 }
 
 function findPath(from, to, cb) {

@@ -99,16 +99,13 @@ EnemyTank.prototype.update = function() {
     this.turret.rotation = this.game.physics.arcade.angleBetween(this.tank, getMidPoint(this.target));
     //this.tank.rotation = this.tank.angle;
 
-    if (this.game.physics.arcade.distanceBetween(this.tank, this.target) < 300)
-    {
-        if (this.game.time.now > this.nextFire && this.bullets.countDead() > 0)
-        {
+    if (this.turret.alive && this.game.physics.arcade.distanceBetween(this.tank, this.target) < 300) {
+        if (this.game.time.now > this.nextFire && this.bullets.countDead() > 0) {
             this.nextFire = this.game.time.now + this.fireRate;
-
             var bullet = this.bullets.getFirstDead();
-
-            bullet.reset(this.turret.x, this.turret.y);
-
+            var startX = this.turret.x + 64 * Math.cos(this.turret.roration);
+            var startY = this.turret.y - 64 * Math.sin(this.turret.roration);
+            bullet.reset(startX, startY);
             bullet.rotation = this.game.physics.arcade.moveToObject(bullet, getMidPoint(this.target), 200);
         }
     }

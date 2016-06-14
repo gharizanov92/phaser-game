@@ -66,8 +66,8 @@
 		var nextTankSpawn = 5000;
 		var tankRespawnRate = 5000;
 
-		var nextFire = 100;
-		var fireRate = 100;
+		var nextFire = 0;
+		var fireRate = 500;
 
 		var bullets;
 
@@ -137,6 +137,7 @@
 
 		    // player
 		    player = game.add.sprite(300, 200, 'lady gaga');
+		    //player.anchor.setTo(0.5, 0.5);
 			player.scale.setTo(0.75, 0.75);
 
 		    //  We need to enable physics on the player
@@ -204,20 +205,23 @@
 				explosionAnimation.animations.add('kaboom');
 			}
 
-			game.input.onUp.add(function(){
-				var bullet = this.bullets.getFirstDead();
-            	bullet.reset(player.x, player.y);
-		        var xDist = player.x + 320 * Math.cos(direction);
-	        	var yDist = player.y + 320 * Math.sin(direction);
-	        	var target = new Phaser.Point(xDist, yDist);
-            	//bullet.rotation = this.game.physics.arcade.moveToObject(bullet, target, 400);
-            	bullet.rotation = game.physics.arcade.moveToPointer(bullet, 400);
-			})
+			game.input.onDown.add(moveTo);
+
+			game.input.onUp.add(function() {
+				if (game.time.now > nextFire) {
+					nextFire = game.time.now + fireRate;
+					var bullet = this.bullets.getFirstDead();
+	            	bullet.reset(player.x, player.y);
+	            	bullet.rotation = game.physics.arcade.moveToPointer(bullet, 400);
+				}
+			});
 		}
 
 		function update() {
 			player.body.velocity.x = 0;
 			player.body.velocity.y = 0;
+
+			game.world.bringToTop(explosions);
 
 		    game.physics.arcade.collide(player, platforms);
 			game.physics.arcade.collide(stars, platforms);
@@ -303,9 +307,9 @@
 		        //findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
 		        findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
 		    }*/
-			if (game.input.activePointer.isDown) {
+			/*if (game.input.activePointer.isDown) {
 				findPath(new Phaser.Point(player.x + 48, player.y + 48), new Phaser.Point(game.input.activePointer.pageX, game.input.activePointer.pageY), createPathForPlayer);
-			}
+			}*/
 
 			// enemies
 			//game.physics.arcade.overlap(enemyBullets, player, bulletHitPlayer, null, this);
@@ -319,6 +323,7 @@
 					enemiesAlive++;
 					//game.physics.arcade.collide(tank, enemies[i].tank);
 					game.physics.arcade.overlap(bullets, enemies[i].tank, bulletHitEnemy, null, this);
+					//game.physics.arcade.overlap(enemyBullets, enemies[i].tank, bulletHitEnemy, null, this);
 					enemies[i].update();
 				}
 			}
@@ -327,6 +332,10 @@
 				nextTankSpawn = game.time.now + tankRespawnRate;
 				enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder));
 			}
+		}
+
+		function moveTo(tile) {
+			findPath(new Phaser.Point(player.x + 48, player.y + 48), new Phaser.Point(game.input.activePointer.pageX, game.input.activePointer.pageY), createPathForPlayer);
 		}
 
 		function bulletHitPlayer(player, bullet) {
@@ -354,15 +363,15 @@
 		function createPathForPlayer(found_path) {
 			found_path = found_path || [];
 			path = found_path;
-			//waypoints.removeAll();
+			waypoints.removeAll();
 			blocked = false;
 			path = path.slice(1);
 			moveToX = path[0].x * TILE_WIDTH - TILE_WIDTH;
 			moveToY = path[0].y * TILE_HEIGHT - TILE_HEIGHT;
-/*
+
 			for(var i = 0, ilen = path.length; i < ilen; i++) {
-				waypoints.create(path[i].x * TILE_WIDTH - 3, path[i].y * TILE_HEIGHT + 28, 'waypoint');
-			}*/
+				waypoints.create(path[i].x * TILE_WIDTH, path[i].y * TILE_HEIGHT, 'waypoint');
+			}
 		}
 
 		function collectStar (player, star) {
