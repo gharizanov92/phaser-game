@@ -12,6 +12,8 @@
 	<script type="text/javascript" src="js/tanks.js"></script>
 	<script type="text/javascript">
 		var game = new Phaser.Game(800, 480, Phaser.AUTO, 'game', { preload: preload, create: create, update: update });
+		game.over = false;
+		game.started = false;
 
 		function preload() {
 			game.load.image('cup', 'assets/cup.png');
@@ -67,8 +69,9 @@
 		var enemiesAlive = 0;
 		var explosions;
 
-		var nextTankSpawn = 5000;
+		var nextTankSpawn = 500;
 		var tankRespawnRate = 5000;
+		var tankSpeed = 7;
 
 		var nextFire = 0;
 		var fireRate = 500;
@@ -134,6 +137,7 @@
 
 			//obstacles.body.immovable = true;
 			goblein = game.add.sprite(380, 252, 'cup');
+			game.physics.arcade.enable(goblein);
 			goblein.anchor.setTo(0.5, 0.5);
 			game.add.sprite(364, 220, 'goblein');
 
@@ -174,13 +178,6 @@
 
 			enemies = [];
 
-			enemiesTotal = 1;
-			enemiesAlive = 1;
-
-			for (var i = 0; i < enemiesTotal; i++) {
-				enemies.push(new EnemyTank(i, game, player, goblein, enemyBullets, pathfinder));
-			}
-
 			//  Our bullet group
 			bullets = game.add.group();
 			bullets.enableBody = true;
@@ -217,9 +214,24 @@
 
 			arrow = game.add.sprite(player.x, player.y, graphics.generateTexture());
 			arrow.kill();
+
+		    introText = game.add.text(game.world.centerX, 100, '- click to start -', { font: "40px Arial", fill: "#ffffff", align: "center" });
+    		introText.anchor.setTo(0.5, 0.5);
+    		scoreText = game.add.text(10, 10, "Score: " + score, { font: "20px Arial", fill: "#ffffff", align: "center" });
+
+    		game.state.start('start',true,false);
 		}
 
 		function update() {
+
+			if (game.over) {
+				gameOver();
+				return;
+			}
+
+			if (!game.started) {
+				return;
+			}
 
 			player.body.velocity.x = 0;
 			player.body.velocity.y = 0;
@@ -233,6 +245,7 @@
 
 			game.physics.arcade.overlap(enemyBullets, layer, bulletHitTile, null, this);
 			game.physics.arcade.overlap(bullets, layer, bulletHitTile, null, this);
+			game.physics.arcade.overlap(enemyBullets, goblein, bulletHitPlayer, null, this);
 
 			// show player movement
 			game.physics.arcade.overlap(player, waypoints, function(player, waypoint){
@@ -270,6 +283,7 @@
 					enemiesAlive++;
 					game.physics.arcade.overlap(bullets, enemies[i].tank, bulletHitEnemy, null, this);
 					game.physics.arcade.overlap(enemyBullets, enemies[i].tank, bulletHitEnemy, null, this);
+					game.physics.arcade.overlap(goblein, enemies[i].tank, gameOver, null, this);
 					enemies[i].update();
 				}
 			}
@@ -277,10 +291,11 @@
 			// spawn new onews
 			if (game.time.now > nextTankSpawn) {
 				nextTankSpawn = game.time.now + tankRespawnRate;
-				if (tankRespawnRate > 3000) {
-					tankRespawnRate -= 100;
+				if (tankRespawnRate > 2000) {
+					tankRespawnRate -= 250;
+					tankSpeed += 1;
 				}
-				enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder));
+				enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder, tankSpeed));
 			}
 
 			if (arrow && arrow.alive) {
@@ -291,8 +306,38 @@
 			}
 		}
 
-		function moveOrPrepareShot(tile) {
+		function gameOver() {
+			game.over = true;
+
+			if (!game.restartIn) {
+				game.restartIn = game.time.now + 3000;
+			} else if (game.time.now > game.restartIn) {
+				game.state.start(game.state.current);
+				game.restartIn = undefined;
+				game.over = false;
+				game.started = false;
+			}
 			
+			player.body.velocity.setTo(0);
+			for (var i = 0; i < enemies.length; i++) {
+				enemies[i].tank.body.velocity.setTo(0);
+			}
+		    introText.text = 'Game Over!\n Score: ' + score + '\nGame will restart in 3 seconds';
+			introText.visible = true;
+		}
+
+		function moveOrPrepareShot(tile) {
+
+			if (!game.started) {
+				game.started = true;
+				introText.visible = false;
+				return;
+			}
+
+			if (game.over) {
+				return;
+			}
+
 			if (game.physics.arcade.distanceBetween(player, game.input.activePointer) < 42) {
 				canShoot = true;
 				arrow = game.add.sprite(player.x + player.width / 2, player.y + player.height / 2, graphics.generateTexture());
@@ -336,6 +381,12 @@
 	        enemies.forEach(function(enemy, i) {
 	        	if (enemy && enemy.name == tank.name) {
 					enemies[i].damage();
+					if (enemies[i].alive) {
+						score += tankSpeed * ((5000 - tankRespawnRate) / 1000);
+					} else {
+						score += 7;
+					}
+					scoreText.text = 'Score: ' + score;
 	        	}
 	        });
 		}
@@ -347,11 +398,17 @@
 			path = path.slice(1);
 
 			for(var i = 0, ilen = path.length; i < ilen; i++) {
-				if (path[i].x == 0) {
+				if (path[i].x <= 0) {
 					path[i].x = 1;
 				}
-				if (path[i].y == 0) {
+				if (path[i].y <= 0) {
 					path[i].y = 1;
+				}
+				if (path[i].x >= layer.width / TILE_WIDTH) {
+					path[i].x = layer.width / TILE_WIDTH - 1;
+				}				
+				if (path[i].y >= layer.height / TILE_HEIGHT) {
+					path[i].y = layer.height / TILE_HEIGHT - 1;
 				}
 				waypoints.create(path[i].x * TILE_WIDTH, path[i].y * TILE_HEIGHT, 'waypoint');
 			}

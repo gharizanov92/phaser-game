@@ -5,7 +5,7 @@ function getMidPoint(obj) {
     return new Phaser.Point(obj.x + obj.width / 2, obj.y + obj.height / 2);
 }
 
-EnemyTank = function (index, game, target, goblein, bullets, pathfinder) {
+EnemyTank = function (index, game, target, goblein, bullets, pathfinder, speed) {
 
     this.pathfinder = pathfinder;
 
@@ -37,6 +37,7 @@ EnemyTank = function (index, game, target, goblein, bullets, pathfinder) {
 
     this.game = game;
     this.health = 2;
+    this.speed = speed;
     this.target = target;
     this.goblein = goblein;
     this.bullets = bullets;
@@ -112,8 +113,7 @@ EnemyTank.prototype.update = function() {
         }
     }
 
-    this.tank.body.velocity.x = 0;
-    this.tank.body.velocity.y = 0;
+    this.tank.body.velocity.setTo(0);
 
     if (this.path[0]) {
         var moveToX = this.path[0].x;
@@ -136,7 +136,7 @@ EnemyTank.prototype.update = function() {
                 }
             } else {*/
             tank.rotation = angleToNextPoint;
-            game.physics.arcade.velocityFromRotation(tank.rotation, 7, tank.body.velocity);
+            game.physics.arcade.velocityFromRotation(tank.rotation, this.speed, tank.body.velocity);
             //}
         } else {
             if (this.path && this.path.length > 0) {
