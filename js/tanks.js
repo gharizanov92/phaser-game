@@ -46,7 +46,8 @@ EnemyTank = function (index, game, target, goblein, bullets, pathfinder) {
 
     this.shadow = game.add.sprite(x, y, 'enemy', 'shadow');
     this.tank = game.add.sprite(x, y, 'enemy', 'tank1');
-    this.turret = game.add.sprite(x, y, 'enemy', 'turret');
+    this.turret = game.add.sprite(x, y, 'enemy-turret');
+    //this.tracks = game.add.sprite(x, y, 'enemy', 'tracks');
 
     this.tank.scale.setTo(0.75, 0.75);
     this.shadow.scale.setTo(0.75, 0.75);
@@ -106,20 +107,36 @@ EnemyTank.prototype.update = function() {
             var startX = this.turret.x + 64 * Math.cos(this.turret.rotation);
             var startY = this.turret.y + 64 * Math.sin(this.turret.rotation);
             bullet.reset(startX, startY);
-            bullet.rotation = this.game.physics.arcade.moveToObject(bullet, getMidPoint(this.target), 200);
+            bullet.rotation = this.game.physics.arcade.moveToObject(bullet, this.target, 100);
         }
     }
+
+    this.tank.body.velocity.x = 0;
+    this.tank.body.velocity.y = 0;
 
     if (this.path[0]) {
         var moveToX = this.path[0].x;
         var moveToY = this.path[0].y;
         var tank = this.tank;
+
         if (this.game.physics.arcade.distanceBetween(tank, new Phaser.Point(moveToX, moveToY)) > 3) {
             var from = new Phaser.Point(tank.x + Math.round(tank.width / 2), tank.y + Math.round(tank.height / 2));
             var to = new Phaser.Point(moveToX + Math.round(tank.width / 2), moveToY + Math.round(tank.height / 2));
-            tank.angle = game.physics.arcade.angleBetween(from, to);
-            game.physics.arcade.velocityFromRotation(tank.angle, 7, tank.body.velocity);
-            this.tank.rotation = tank.angle;
+            
+            var angleToNextPoint = game.physics.arcade.angleBetween(from, to);
+            var tankAngle = enemies[0].tank.rotation;
+            
+            /*if (Math.abs(tankAngle - angleToNextPoint) > .005 ) {
+                //if ( 2 * Math.PI - Math.abs(tankAngle - angleToNextPoint) < Math.abs(tankAngle - angleToNextPoint)) {
+                if (tankAngle + 2 * Math.PI < angleToNextPoint + 2 * Math.PI) {
+                    tank.rotation += .01;
+                } else {
+                    tank.rotation -= .01;
+                }
+            } else {*/
+                tank.rotation = angleToNextPoint;
+                game.physics.arcade.velocityFromRotation(tank.rotation, 7, tank.body.velocity);
+            //}
         } else {
             if (this.path && this.path.length > 0) {
                 var nextPoint = this.path[0];
@@ -128,9 +145,6 @@ EnemyTank.prototype.update = function() {
                 this.path = this.path.slice(1);
             }
         }
-    } else {
-        this.tank.body.velocity.x = 0;
-        this.tank.body.velocity.y = 0;
     }
 
 };
@@ -140,7 +154,7 @@ EnemyTank.prototype.moveTo = function(to) {
     findPath(new Phaser.Point(this.tank.x, this.tank.y), new Phaser.Point(to.x, to.y), function(found_path) {
         found_path = found_path || [];
         that.path = found_path.slice(1).map(function(entry){
-            return {x: entry.x * TILE_WIDTH - TILE_WIDTH + that.tank.width, y: entry.y * TILE_HEIGHT - TILE_HEIGHT + that.tank.height};
+            return {x: entry.x * TILE_WIDTH, y: entry.y * TILE_HEIGHT};
         });
         //waypoints.removeAll();
         blocked = false;

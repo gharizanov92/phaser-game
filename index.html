@@ -25,6 +25,7 @@
 		    game.load.spritesheet('background', 'assets/ground_tiles.png', 64, 64);
 
 			game.load.atlas('enemy', 'assets/tanks/enemy-tanks.png', 'assets/tanks/tanks.json');
+			game.load.image('enemy-turret', 'assets/tanks/turret.png');
 			game.load.image('bullet', 'assets/tanks/bullet.png');
 			game.load.spritesheet('kaboom', 'assets/tanks/explosion.png', 64, 64, 23);
 		}
@@ -46,6 +47,7 @@
 
 		var map;
 		var tileset;
+		var grid;
 		var layer;
 		var pathfinder;
 		var path;
@@ -131,7 +133,7 @@
 
 		    // player
 		    player = game.add.sprite(300, 200, 'lady gaga');
-		    //player.anchor.setTo(0.5, 0.5);
+		    player.anchor.setTo(0.5, 0.5);
 			player.scale.setTo(0.75, 0.75);
 
 		    //  We need to enable physics on the player
@@ -186,7 +188,7 @@
 			//  Explosion pool
 			explosions = game.add.group();
 
-			for (var i = 0; i < 10; i++)
+			for (var i = 0; i < 300; i++)
 			{
 				var explosionAnimation = explosions.create(0, 0, 'kaboom', [0], false);
 				explosionAnimation.anchor.setTo(0.5, 0.5);
@@ -207,7 +209,7 @@
 				arrow.kill();
 			});
 
-			arrow = game.add.sprite(player.x + player.width / 2, player.y + player.height / 2, graphics.generateTexture());
+			arrow = game.add.sprite(player.x, player.y, graphics.generateTexture());
 			arrow.kill();
 		}
 
@@ -235,27 +237,18 @@
 				waypoint.markedForKill = true;
 			}, null, this);
 
-			if (cursors.up.isDown) {
-				for (var i = 0; i < enemies.length; i++) {
-					var randomX = Math.floor(Math.random() * 732) + 64;
-					var randomY = Math.floor(Math.random() * 412) + 64;
-					enemies[i].moveTo(new Phaser.Point(randomX, randomY));
-					waypoints.removeAll();
-				}
-			}
-
 			// if we've reached the next point
 	    	if (game.physics.arcade.distanceBetween(player, new Phaser.Point(moveToX, moveToY)) > 3) {
-				var from = new Phaser.Point(player.x + Math.round(player.width / 2), player.y + Math.round(player.height / 2));
-				var to = new Phaser.Point(moveToX + Math.round(player.width / 2), moveToY + Math.round(player.height / 2));
+				var from = new Phaser.Point(player.x + 5, player.y + 5);
+				var to = new Phaser.Point(moveToX + 5, moveToY + 5);
 				direction = game.physics.arcade.angleBetween(from, to);
 				game.physics.arcade.velocityFromRotation(direction, 150, player.body.velocity);
 	    	} else {
 	    		player.animations.stop();
 				if (path && path.length > 0) {
 					var nextPoint = path[0];
-					moveToX = nextPoint.x * TILE_WIDTH - TILE_WIDTH;
-					moveToY = nextPoint.y * TILE_HEIGHT - TILE_HEIGHT;
+					moveToX = nextPoint.x * TILE_WIDTH;
+					moveToY = nextPoint.y * TILE_HEIGHT;
 					path = path.slice(1);
 				}
 	    	}
@@ -285,14 +278,14 @@
 
 			if (arrow && arrow.alive) {
 				arrow.rotation =  game.physics.arcade.angleToPointer(player);
-				arrow.x = player.x + player.width / 2;
-				arrow.y = player.y + player.height / 2;
+				arrow.x = player.x;
+				arrow.y = player.y;
 			}
 		}
 
 		function moveTo(tile) {
 			
-			if (game.physics.arcade.distanceBetween(player, game.input.activePointer) < 64) {
+			if (game.physics.arcade.distanceBetween(player, game.input.activePointer) < 32) {
 				canShoot = true;
 				arrow = game.add.sprite(player.x + player.width / 2, player.y + player.height / 2, graphics.generateTexture());
 				//arrow = game.add.sprite(player.x, player.y, graphics.generateTexture());
@@ -329,12 +322,19 @@
 			waypoints.removeAll();
 			blocked = false;
 			path = path.slice(1);
-			moveToX = path[0].x * TILE_WIDTH - TILE_WIDTH;
-			moveToY = path[0].y * TILE_HEIGHT - TILE_HEIGHT;
 
 			for(var i = 0, ilen = path.length; i < ilen; i++) {
+				if (path[i].x == 0) {
+					path[i].x = 1;
+				}
+				if (path[i].y == 0) {
+					path[i].y = 1;
+				}
 				waypoints.create(path[i].x * TILE_WIDTH, path[i].y * TILE_HEIGHT, 'waypoint');
 			}
+
+			moveToX = path[0].x * TILE_WIDTH;// - TILE_WIDTH;
+			moveToY = path[0].y * TILE_HEIGHT;// - TILE_HEIGHT;
 		}
 
 		function collectStar (player, star) {
