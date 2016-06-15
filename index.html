@@ -72,6 +72,7 @@
 
 		var bullets;
 		var graphics;
+		var arrow;
 
 		var animationAngles = {
 			0: 'right',
@@ -87,21 +88,13 @@
 		function create() {	
 
 			game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
-			// game.input.onUp.add(toggleFullscreen, this);
 
 			// game
 			game.world.setBounds(0, 0, 800, 480);
-/*
-			for (var i = 0; i < 800 / 64; i++) {
-				for (var j = 0; j < 600 / 64; j++) {
-		    		game.add.tileSprite(i*64, j*64, 64, 64, 'background', Math.floor(Math.random()*4 + 1));	
-		    	}	
-			}*/
 
 			graphics = game.add.graphics(0, 0);		   
 			graphics.lineStyle(2, 0x0000FF, 0.5);
-    		graphics.drawRect(10, 10, 100, 100);
-
+    		graphics.drawRect(0, 0, 100, 5);
 
 		    map = game.add.tilemap('map');
     		map.addTilesetImage('ground_tiles', 'tiles');
@@ -131,12 +124,6 @@
 		    // obstacles
 		    obstacles = game.add.group();
 		    obstacles.enableBody = true;
-/*
-		    for (var i = 0; i < 5; i++) {
-		    	var x = Math.random() * 704 + 64;
-		    	var y = Math.random() * 504 + 64;
-		    	game.add.tileSprite(x, y, 64, 64, 'background', Math.floor(Math.random()*4 + 6));
-		    }*/
 
 			//obstacles.body.immovable = true;
 			goblein = game.add.sprite(364, 220, 'cup');
@@ -163,11 +150,6 @@
 
 		    cursors = game.input.keyboard.createCursorKeys();
 
-		    //scoreText = game.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
-		    //game.camera.follow(player);
-
-		    //game.input.onDown.add(findPathTo, this);
-
 			// enemies
 			//  The enemies bullet group
 			enemyBullets = game.add.group();
@@ -189,7 +171,6 @@
 
 			for (var i = 0; i < enemiesTotal; i++) {
 				enemies.push(new EnemyTank(i, game, player, goblein, enemyBullets, pathfinder));
-				//enemies[i].moveTo(new Phaser.Point(goblein.x, goblein.y + 64));
 			}
 
 			//  Our bullet group
@@ -222,14 +203,15 @@
 	            	bullet.rotation = game.physics.arcade.moveToPointer(bullet, 400);
 				}
 				canShoot = false;
+				//arrow.visible = false;
+				arrow.kill();
 			});
+
+			arrow = game.add.sprite(player.x + player.width / 2, player.y + player.height / 2, graphics.generateTexture());
+			arrow.kill();
 		}
 
 		function update() {
-			//graphics = game.add.graphics(0, 0);
-    		//graphics.clear();
-		    graphics.lineStyle(2, 0x0000FF, 0.5);
-    		graphics.drawRect(1, 1, game.time.now / 100, game.time.now / 100);
 
 			player.body.velocity.x = 0;
 			player.body.velocity.y = 0;
@@ -261,40 +243,9 @@
 					waypoints.removeAll();
 				}
 			}
-			/*
-                        if (cursors.left.isDown) {
-                            direction = getDirection(180, direction);
-                        }
-                        if (cursors.right.isDown) {
-                            direction = getDirection(0, direction);
-                        }
-                        if (cursors.up.isDown) {
-                            direction = getDirection(90, direction);
-                        }
-                        if (cursors.down.isDown) {
-                            if (cursors.right.isDown) {
-                                direction = 315;
-                            } else {
-                                direction = getDirection(270, direction);
-                            }
-                        }*/
-
-		    // if (player.x < moveToX) {
-		    // 	direction = getDirection(180, direction);
-		    // } else if (player.x > moveToX) {
-		    // 	direction = getDirection(0, direction);
-		    // }
-
-		    // if (player.y < moveToY) {
-		    // 	direction = getDirection(270, direction);
-		    // } else if (player.y > moveToY) {
-		    // 	direction = getDirection(90, direction);
-		    // }
 
 			// if we've reached the next point
 	    	if (game.physics.arcade.distanceBetween(player, new Phaser.Point(moveToX, moveToY)) > 3) {
-				//player.body.velocity.y = 150 * Math.sin(direction);
-				//player.body.velocity.x = 150 * Math.cos(direction);
 				var from = new Phaser.Point(player.x + Math.round(player.width / 2), player.y + Math.round(player.height / 2));
 				var to = new Phaser.Point(moveToX + Math.round(player.width / 2), moveToY + Math.round(player.height / 2));
 				direction = game.physics.arcade.angleBetween(from, to);
@@ -311,39 +262,31 @@
 
 			player.animations.play(animationAngles[radToDeg(direction)]);
 
-	    	// if (cursors.left.isUp && cursors.right.isUp && cursors.up.isUp && cursors.down.isUp) {
-	    	// 	player.animations.stop();
-    		// }
-/*
-		    if (game.input.mousePointer.isDown) {
-		        blocked = true;
-		        //findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
-		        findPathTo(layer.getTileX(game.input.x), layer.getTileY(game.input.y));
-		    }*/
-			/*if (game.input.activePointer.isDown) {
-				findPath(new Phaser.Point(player.x + 48, player.y + 48), new Phaser.Point(game.input.activePointer.pageX, game.input.activePointer.pageY), createPathForPlayer);
-			}*/
+			// handle enemies
 
-			// enemies
-			//game.physics.arcade.overlap(enemyBullets, player, bulletHitPlayer, null, this);
-
-			enemiesAlive = 0;
-
-			for (var i = 0; i < enemies.length; i++)
-			{
-				if (enemies[i].alive)
-				{
+			// update all enemies
+			for (var i = 0; i < enemies.length; i++) {
+				if (enemies[i].alive) {
 					enemiesAlive++;
-					//game.physics.arcade.collide(tank, enemies[i].tank);
 					game.physics.arcade.overlap(bullets, enemies[i].tank, bulletHitEnemy, null, this);
 					game.physics.arcade.overlap(enemyBullets, enemies[i].tank, bulletHitEnemy, null, this);
 					enemies[i].update();
 				}
 			}
 
+			// spawn new onews
 			if (game.time.now > nextTankSpawn) {
 				nextTankSpawn = game.time.now + tankRespawnRate;
+				if (tankRespawnRate > 1000) {
+					tankRespawnRate -= 250;
+				}
 				enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder));
+			}
+
+			if (arrow && arrow.alive) {
+				arrow.rotation =  game.physics.arcade.angleToPointer(player);
+				arrow.x = player.x + player.width / 2;
+				arrow.y = player.y + player.height / 2;
 			}
 		}
 
@@ -351,6 +294,8 @@
 			
 			if (game.physics.arcade.distanceBetween(player, game.input.activePointer) < 64) {
 				canShoot = true;
+				arrow = game.add.sprite(player.x + player.width / 2, player.y + player.height / 2, graphics.generateTexture());
+				//arrow = game.add.sprite(player.x, player.y, graphics.generateTexture());
 			} else {
 				findPath(new Phaser.Point(player.x + 48, player.y + 48), new Phaser.Point(game.input.activePointer.pageX, game.input.activePointer.pageY), createPathForPlayer);
 			}

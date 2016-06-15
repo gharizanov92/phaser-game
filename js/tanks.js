@@ -40,8 +40,8 @@ EnemyTank = function (index, game, target, goblein, bullets, pathfinder) {
     this.target = target;
     this.goblein = goblein;
     this.bullets = bullets;
-    this.fireRate = 2000;
-    this.nextFire = 2000;
+    this.fireRate = 6000;
+    this.nextFire = 6000;
     this.alive = true;
 
     this.shadow = game.add.sprite(x, y, 'enemy', 'shadow');
@@ -99,7 +99,7 @@ EnemyTank.prototype.update = function() {
     this.turret.rotation = this.game.physics.arcade.angleBetween(this.tank, getMidPoint(this.target));
     //this.tank.rotation = this.tank.angle;
 
-    if (this.turret.alive && this.game.physics.arcade.distanceBetween(this.tank, this.target) < 1300) {
+    if (this.turret.alive && this.game.physics.arcade.distanceBetween(this.tank, this.target) < 300) {
         if (this.game.time.now > this.nextFire && this.bullets.countDead() > 0) {
             this.nextFire = this.game.time.now + this.fireRate;
             var bullet = this.bullets.getFirstDead();
