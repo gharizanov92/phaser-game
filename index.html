@@ -26,6 +26,7 @@
 
 			game.load.atlas('enemy', 'assets/tanks/enemy-tanks.png', 'assets/tanks/tanks.json');
 			game.load.image('enemy-turret', 'assets/tanks/turret.png');
+			game.load.image('shadow_hover', 'assets/tanks/shadow_hover.png');
 			game.load.image('bullet', 'assets/tanks/bullet.png');
 			game.load.spritesheet('kaboom', 'assets/tanks/explosion.png', 64, 64, 23);
 		}
@@ -52,6 +53,7 @@
 		var pathfinder;
 		var path;
 		var direction;
+		var walkables;
 
 		var stars;
 		var waypoints;
@@ -95,7 +97,8 @@
 			game.world.setBounds(0, 0, 800, 480);
 
 			graphics = game.add.graphics(0, 0);		   
-			graphics.lineStyle(2, 0x0000FF, 0.5);
+			graphics.lineStyle(2, 0x0000FF, 0.2);
+			graphics.beginFill(0x0000FF, 0.2);
     		graphics.drawRect(0, 0, 100, 5);
 
 		    map = game.add.tilemap('map');
@@ -104,11 +107,13 @@
 		    obsticles = map.createLayer('obsticles');
 
 			// room
-			game.physics.startSystem(Phaser.Physics.ARCADE);
+			game.physics.startSystem(Phaser.Physics.P2JS);
 		    platforms = game.add.group();
 		    platforms.enableBody = true;
 
-		    var walkables = [0, 22, 23, 24, 25, 26, 19, 13, 14, 7, 8, 9, 10, 11, 12, 20, 21];
+		    walkables = [0, 7, 8, 9, 10, 11, 12, 13, 14, 19, 20, 21, 22, 23, 24, 25, 26];
+		    //map.setCollisionBetween(1, 7);
+		    game.physics.p2.convertTilemap(map, layer);
 		    //var walkables = [127];
 
 		    pathfinder = game.plugins.add(Phaser.Plugin.PathFinderPlugin);
@@ -128,8 +133,9 @@
 		    obstacles.enableBody = true;
 
 			//obstacles.body.immovable = true;
-			goblein = game.add.sprite(364, 220, 'cup');
-			goblein = game.add.sprite(364, 220, 'goblein');
+			goblein = game.add.sprite(380, 252, 'cup');
+			goblein.anchor.setTo(0.5, 0.5);
+			game.add.sprite(364, 220, 'goblein');
 
 		    // player
 		    player = game.add.sprite(300, 200, 'lady gaga');
@@ -221,14 +227,15 @@
 			game.world.bringToTop(explosions);
 
 		    game.physics.arcade.collide(player, platforms);
-			game.physics.arcade.collide(stars, platforms);
-			game.physics.arcade.collide(player, obsticles);
 			game.physics.arcade.overlap(player, stars, collectStar, null, this);
 
 			game.physics.arcade.overlap(enemyBullets, player, bulletHitPlayer, null, this);
 
+			game.physics.arcade.overlap(enemyBullets, layer, bulletHitTile, null, this);
+			game.physics.arcade.overlap(bullets, layer, bulletHitTile, null, this);
+
 			// show player movement
-			game.physics.arcade.overlap(enemies, waypoints, function(player, waypoint){
+			game.physics.arcade.overlap(player, waypoints, function(player, waypoint){
 				if (!waypoint.markedForKill) {
 					setTimeout(function() {
 						waypoint.kill();
@@ -270,8 +277,8 @@
 			// spawn new onews
 			if (game.time.now > nextTankSpawn) {
 				nextTankSpawn = game.time.now + tankRespawnRate;
-				if (tankRespawnRate > 1000) {
-					tankRespawnRate -= 250;
+				if (tankRespawnRate > 3000) {
+					tankRespawnRate -= 100;
 				}
 				enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder));
 			}
@@ -280,6 +287,7 @@
 				arrow.rotation =  game.physics.arcade.angleToPointer(player);
 				arrow.x = player.x;
 				arrow.y = player.y;
+				arrow.scale.setTo(game.physics.arcade.distanceToPointer(player) / 100, 1)
 			}
 		}
 
@@ -290,11 +298,27 @@
 				arrow = game.add.sprite(player.x + player.width / 2, player.y + player.height / 2, graphics.generateTexture());
 				//arrow = game.add.sprite(player.x, player.y, graphics.generateTexture());
 			} else {
-				findPath(new Phaser.Point(player.x + 48, player.y + 48), new Phaser.Point(game.input.activePointer.pageX, game.input.activePointer.pageY), createPathForPlayer);
+				findPath(new Phaser.Point(player.x + player.width / 2, player.y  + player.height / 2), new Phaser.Point(game.input.activePointer.pageX, game.input.activePointer.pageY), createPathForPlayer);
 			}
 		}
 
 		function bulletHitPlayer(player, bullet) {
+		    bullet.kill();
+	        var xDist = 32 * Math.cos(bullet.rotation);
+	        var yDist = - 32 * Math.sin(bullet.rotation);
+	        createExplosionAt(bullet.x + xDist, bullet.y - yDist);
+		}
+
+		function bulletHitTile(bullet, tile) {
+			if (tile.index == -1) {
+				return;
+			}
+			if (walkables.indexOf(tile.index) != -1) {
+				return;
+			}
+			if (game.physics.arcade.distanceBetween(bullet, new Phaser.Point(tile.worldX + tile.width / 2, tile.worldY + tile.height / 2)) > 16) {
+				return;
+			}
 		    bullet.kill();
 	        var xDist = 32 * Math.cos(bullet.rotation);
 	        var yDist = - 32 * Math.sin(bullet.rotation);
@@ -320,7 +344,6 @@
 			found_path = found_path || [];
 			path = found_path;
 			waypoints.removeAll();
-			blocked = false;
 			path = path.slice(1);
 
 			for(var i = 0, ilen = path.length; i < ilen; i++) {
@@ -333,8 +356,8 @@
 				waypoints.create(path[i].x * TILE_WIDTH, path[i].y * TILE_HEIGHT, 'waypoint');
 			}
 
-			moveToX = path[0].x * TILE_WIDTH;// - TILE_WIDTH;
-			moveToY = path[0].y * TILE_HEIGHT;// - TILE_HEIGHT;
+			moveToX = path[0].x * TILE_WIDTH;
+			moveToY = path[0].y * TILE_HEIGHT;
 		}
 
 		function collectStar (player, star) {

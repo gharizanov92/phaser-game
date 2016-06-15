@@ -45,12 +45,13 @@ EnemyTank = function (index, game, target, goblein, bullets, pathfinder) {
     this.alive = true;
 
     this.shadow = game.add.sprite(x, y, 'enemy', 'shadow');
+    //this.shadow = game.add.sprite(x, y, 'shadow_hover');
     this.tank = game.add.sprite(x, y, 'enemy', 'tank1');
     this.turret = game.add.sprite(x, y, 'enemy-turret');
     //this.tracks = game.add.sprite(x, y, 'enemy', 'tracks');
 
     this.tank.scale.setTo(0.75, 0.75);
-    this.shadow.scale.setTo(0.75, 0.75);
+    this.shadow.scale.setTo(0.95, 0.95);
     this.turret.scale.setTo(0.75, 0.75);
 
     this.shadow.anchor.set(0.5);
@@ -64,7 +65,7 @@ EnemyTank = function (index, game, target, goblein, bullets, pathfinder) {
 
     this.tank.angle = 90;
 
-    this.moveTo(new Phaser.Point(goblein.x, goblein.y + 64));
+    this.moveTo(new Phaser.Point(goblein.x, goblein.y + 32));
     //game.physics.arcade.velocityFromRotation(this.tank.rotation, 50, this.tank.body.velocity);
 
 };
@@ -134,8 +135,8 @@ EnemyTank.prototype.update = function() {
                     tank.rotation -= .01;
                 }
             } else {*/
-                tank.rotation = angleToNextPoint;
-                game.physics.arcade.velocityFromRotation(tank.rotation, 7, tank.body.velocity);
+            tank.rotation = angleToNextPoint;
+            game.physics.arcade.velocityFromRotation(tank.rotation, 7, tank.body.velocity);
             //}
         } else {
             if (this.path && this.path.length > 0) {
@@ -156,11 +157,5 @@ EnemyTank.prototype.moveTo = function(to) {
         that.path = found_path.slice(1).map(function(entry){
             return {x: entry.x * TILE_WIDTH, y: entry.y * TILE_HEIGHT};
         });
-        //waypoints.removeAll();
-        blocked = false;
-
-        for(var i = 0, ilen = that.path.length; i < ilen; i++) {
-            waypoints.create(that.path[i].x - 3, that.path[i].y, 'waypoint');
-        }
     });
 };
