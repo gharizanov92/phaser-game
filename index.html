@@ -338,7 +338,7 @@
 				return;
 			}
 
-			if (game.physics.arcade.distanceBetween(player, game.input.activePointer) < 42) {
+			if (game.physics.arcade.distanceBetween(player, game.input.activePointer) < 64) {
 				canShoot = true;
 				arrow = game.add.sprite(player.x + player.width / 2, player.y + player.height / 2, graphics.generateTexture());
 				//arrow = game.add.sprite(player.x, player.y, graphics.generateTexture());
