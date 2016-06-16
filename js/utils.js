@@ -1,8 +1,9 @@
 /**
  * Created by Kayne on 12.6.2016 ã..
  */
-
- function toggleFullscreen() {
+var round = Math.round;
+var random = Math.random;
+function toggleFullscreen() {
     game.scale.startFullScreen(false);
     console.log(game.camera.width);
 }
@@ -43,4 +44,11 @@ function findPath(from, to, cb) {
         [layer.getTileX(from.x), layer.getTileY(from.y)],
         [layer.getTileX(to.x), layer.getTileY(to.y)]);
     pathfinder.calculatePath();
+}
+
+function randomCoords() {
+    isMirroredX = round(random())
+    isMirroredY = round(random())
+    result = [[isMirroredX*768, random()*448], [random()*768, isMirroredY*448]];
+    return result[round(random())];
 }

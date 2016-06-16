@@ -293,8 +293,8 @@
 				nextTankSpawn = game.time.now + tankRespawnRate;
 				if (tankRespawnRate > 2000) {
 					tankRespawnRate -= 250;
-					tankSpeed += 1;
 				}
+				tankSpeed += 10;
 				enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder, tankSpeed));
 			}
 

@@ -23,17 +23,9 @@ EnemyTank = function (index, game, target, goblein, bullets, pathfinder, speed) 
     var x = coords[0];
     var y = coords[1];*/
 
-    var coin = Math.round(Math.random());
-    var choice = Math.round(Math.random());
-    var x = [];
-    var y = [];
-    x[0] = game.world.randomX * coin;
-    x[1] = game.width - 32;
-    y[0] = game.height - 32;
-    y[1] = game.world.randomY * Math.abs(coin - 1);
-    coin = Math.round(Math.random());
-    x = x[coin];
-    y = y[coin];
+    var coords = randomCoords();
+    var x = coords[0];
+    var y = coords[1];
 
     this.game = game;
     this.health = 2;
