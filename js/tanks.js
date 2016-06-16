@@ -34,7 +34,7 @@ EnemyTank = function (index, game, target, goblein, bullets, pathfinder, speed) 
     this.goblein = goblein;
     this.bullets = bullets;
     this.fireRate = 6000;
-    this.nextFire = 6000;
+    this.nextFire = this.game.time.now + 6000;
     this.alive = true;
 
     this.shadow = game.add.sprite(x, y, 'enemy', 'shadow');
@@ -59,8 +59,6 @@ EnemyTank = function (index, game, target, goblein, bullets, pathfinder, speed) 
     this.tank.angle = 90;
 
     this.moveTo(new Phaser.Point(goblein.x, goblein.y + 32));
-    //game.physics.arcade.velocityFromRotation(this.tank.rotation, 50, this.tank.body.velocity);
-
 };
 
 EnemyTank.prototype.damage = function() {
