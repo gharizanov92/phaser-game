@@ -50,6 +50,9 @@ var canShoot = false;
 var bullets;
 var graphics;
 var arrow;
+var energyBar;
+
+var totalEnemiesSpawned = 0;
 
 var animationAngles = {
     0: 'right',
@@ -153,11 +156,6 @@ Game.prototype = {
         // game
         game.world.setBounds(0, 0, 800, 480);
 
-        graphics = game.add.graphics(0, 0);        
-        graphics.lineStyle(2, 0x0000FF, 0.2);
-        graphics.beginFill(0x0000FF, 0.2);
-        graphics.drawRect(0, 0, 100, 5);
-
         map = game.add.tilemap('map');
         map.addTilesetImage('ground_tiles', 'tiles');
         layer = map.createLayer('walkable');
@@ -199,6 +197,7 @@ Game.prototype = {
         player = game.add.sprite(300, 200, 'lady gaga');
         player.anchor.setTo(0.5, 0.5);
         player.scale.setTo(0.75, 0.75);
+        player.energy = 100;
 
         //  We need to enable physics on the player
         game.physics.arcade.enable(player);
@@ -214,7 +213,8 @@ Game.prototype = {
         player.animations.add('upLeft', [24, 25, 26, 27], 8, true);
         player.animations.add('upRight', [28, 29, 30, 31], 8, true);
 
-        cursors = game.input.keyboard.createCursorKeys();
+        // arrow and energy bar
+        energyBar = game.add.sprite(0, 480, 'loading');
 
         // enemies
         //  The enemies bullet group
@@ -254,7 +254,7 @@ Game.prototype = {
         game.input.onDown.add(this.moveOrPrepareShot);
 
         game.input.onUp.add(function() {
-            if (canShoot && game.time.now > nextFire) {
+            if (player.energy > 0 && canShoot && game.time.now > nextFire) {
                 nextFire = game.time.now + fireRate;
                 var bullet = this.bullets.getFirstDead();
                 bullet.reset(player.x, player.y);
@@ -263,23 +263,29 @@ Game.prototype = {
                     game.started--;
                     introText.text = tutorialText[game.started];
                 }
+                player.energy -= 3;
             }
             canShoot = false;
             //arrow.visible = false;
             arrow.kill();
         });
 
-        arrow = game.add.sprite(player.x, player.y, graphics.generateTexture());
-        arrow.kill();
             //      font: 'bold 30pt TheMinion', fill: '#FDFFB5', align: 'center'
         introText = game.add.text(game.world.centerX, 100, tutorialText[8], { font: '25px TheMinion', fill: '#FDFFB5', align: 'center' });
         introText.anchor.setTo(0.5, 0.5);
         scoreText = game.add.text(10, 10, "Score: " + score, { font: '16px TheMinion', fill: '#FDFFB5', align: 'center' });
 
-        game.state.start('start',true,false);
+        graphics = game.add.graphics(0, 0);        
+        graphics.lineStyle(2, 0x0000FF, 0.2);
+        graphics.beginFill(0x0000FF, 0.2);
+        graphics.drawRect(0, 0, 100, 5);
+
+        arrow = game.add.sprite(player.x, player.y, graphics.generateTexture());
+        arrow.kill();
     },
 
     update: function() {
+        energyBar.scale.setTo(2.06 * (player.energy / 100), 0.90);
 
         if (game.over) {
             this.gameOver();
@@ -352,22 +358,23 @@ Game.prototype = {
         }
 
         // spawn new onews
-        if (game.time.now > nextTankSpawn) {
+        if (game.time.now > nextTankSpawn && enemiesTotal < 30) {
             nextTankSpawn = game.time.now + tankRespawnRate;
-            if (tankRespawnRate > 2000) {
-                tankRespawnRate -= 250;
+            if (tankRespawnRate > 1500) {
+                tankRespawnRate -= 150;
             }
-            this.tankSpeed += 10;
+            this.tankSpeed += 2;
             enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder, this.tankSpeed));
         }
+
+        scoreText.text = "Score: " + score;
     },
 
     gameOver : function() {
-        this.game.state.start("GameOver");
-        /*game.over = true;
+        game.over = true;
 
         if (!game.restartIn) {
-            game.restartIn = game.time.now + 3000;
+            game.restartIn = game.time.now + 1000;
         } else if (game.time.now > game.restartIn) {
             game.state.start(game.state.current);
             game.restartIn = undefined;
@@ -378,14 +385,16 @@ Game.prototype = {
             enemiesAlive = 0;
             tankSpeed = 7;
             introText.text = tutorialText[1];
+            nextTankSpawn = 500;
+            tankRespawnRate = 5000;
+            tankSpeed = 7;
+            this.game.state.start("GameOver");
         }
         
         player.body.velocity.setTo(0);
         for (var i = 0; i < enemies.length; i++) {
             enemies[i].tank.body.velocity.setTo(0);
         }
-        introText.text = 'Game Over!\n Score: ' + score + '\nGame will restart in 3 seconds';
-        introText.visible = true;*/
     },
 
     moveOrPrepareShot : function(tile) {
@@ -406,7 +415,7 @@ Game.prototype = {
             return;
         }
 
-        if (game.physics.arcade.distanceBetween(player, game.input.activePointer) < 64) {
+        if (game.physics.arcade.distanceBetween(player, game.input.activePointer) < 96) {
             canShoot = true;
             arrow = game.add.sprite(player.x + player.width / 2, player.y + player.height / 2, graphics.generateTexture());
             //arrow = game.add.sprite(player.x, player.y, graphics.generateTexture());
@@ -418,11 +427,14 @@ Game.prototype = {
         }
     },
 
-    bulletHitPlayer : function(player, bullet) {
+    bulletHitPlayer : function(targetHit, bullet) {
         bullet.kill();
         var xDist = 32 * Math.cos(bullet.rotation);
         var yDist = - 32 * Math.sin(bullet.rotation);
         createExplosionAt(bullet.x + xDist, bullet.y - yDist);
+        if (player.energy > 0) {
+            player.energy -= 20;
+        }        
     },
 
     bulletHitTile : function(bullet, tile) {
@@ -444,25 +456,27 @@ Game.prototype = {
     bulletHitEnemy : function (tank, bullet) {
 
         bullet.kill();
+        console.log(tank);
+        console.log(bullet);
         var xDist = 32 * Math.cos(bullet.rotation);
         var yDist = - 32 * Math.sin(bullet.rotation);
         createExplosionAt(bullet.x + xDist, bullet.y - yDist);
         enemies[tank.name].damage();
-        enemies.forEach(function(enemy, i) {
-            if (enemy && enemy.name == tank.name) {
-                enemies[i].damage();
-                score += this.tankSpeed * ((5000 - tankRespawnRate) / 1000);
-            }
-        });
+        score += Math.round(this.tankSpeed * ((5000 - tankRespawnRate) / 10));
     },
 
     collectStar : function (player, star) {
         // Removes the star from the screen
         star.kill();
-        x = Math.floor(Math.random() * (game.world.width - 32));
-        y = Math.floor(Math.random() * (game.world.height - 32));
+        x = 128 + Math.floor(Math.random() * (game.world.width - 128));
+        y = 64 + Math.floor(Math.random() * (game.world.height - 280));
 
         stars.create(x, y, 'star');
+        player.energy = player.energy + 50;
+
+        if (player.energy > 100) {
+            player.energy = 100;
+        }
 
         score += 10;
         //scoreText.text = 'Score: ' + score;
