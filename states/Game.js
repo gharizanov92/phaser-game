@@ -359,7 +359,7 @@ Game.prototype = {
         }
 
         // spawn new onews
-        if (game.time.now > nextTankSpawn && enemiesTotal < 3) {
+        if (game.time.now > nextTankSpawn && enemiesTotal < 25) {
             nextTankSpawn = game.time.now + tankRespawnRate;
             if (tankRespawnRate > 1500) {
                 tankRespawnRate -= 120;
@@ -368,7 +368,7 @@ Game.prototype = {
             enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder, this.tankSpeed));
         } 
 
-        if (enemiesTotal >= 3 && enemiesAlive == 0) {
+        if (enemiesTotal >= 25 && enemiesAlive == 0) {
             introText.text = "You win!"
             introText.visible = true;
             this.game.state.start("YouWin");
