@@ -72,7 +72,7 @@ var animationAngles = {
 var tutorialText = [
 "Good luck!",
 "If you have no energy - you can't shoot.\nRegain energy by collecting crystals",
-"If you get hit by the enemy, you lose energy.\nYour energy is displayed in the bottom bar",
+"If you get hit by the enemy, you lose energy.\nYour energy is displayed in the green bar on top",
 "You're basically like Dorian Grey, just cooler",
 "If the enemy touches it\nyou lose your power and die.",
 "It's the source of your power",
@@ -380,6 +380,7 @@ Game.prototype = {
             }
             //this.tankSpeed += 1;
             enemiesTotal++;
+            enemiesAlive++;
             enemies.push(new EnemyTank(totalEnemiesSpawned++, game, player, goblein, enemyBullets, pathfinder, this.tankSpeed + level * 2));
         } 
 
@@ -448,7 +449,7 @@ Game.prototype = {
                 introText.text = tutorialText[game.started];
             }
         } else {
-            if (introText.text.indexOf("level") == -1) {
+            if (introText.text.indexOf("Level") == -1) {
                 introText.visible = false;
             }
         }
