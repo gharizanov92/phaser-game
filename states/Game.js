@@ -1,6 +1,7 @@
 var Game = function(game) {
     game.over = false;
-    game.started = 8;
+    game.started = 9;
+    game.nextLevelIn = undefined;
 };
 
 var TILE_WIDTH = 32;
@@ -40,12 +41,15 @@ var enemiesAlive = 0;
 var explosions;
 
 var nextTankSpawn = 500;
-var tankRespawnRate = 7000;
+var tankRespawnRate = 7500;
 var tankSpeed = 7;
+
+var maxTanks = 2;
 
 var nextFire = 0;
 var fireRate = 500;
 var canShoot = false;
+var level = 0;
 
 var bullets;
 var graphics;
@@ -193,6 +197,15 @@ Game.prototype = {
         goblein.anchor.setTo(0.5, 0.5);
         game.add.sprite(364, 220, 'goblein');
 
+        /*
+        goblein = game.add.sprite(380, 242, 'cup');
+        goblein.scale.setTo(1.25, 1.25);
+        game.physics.arcade.enable(goblein);
+        goblein.anchor.setTo(0.5, 0.5);
+        cup = game.add.sprite(360, 203, 'goblein');
+        cup.scale.setTo(1.25,1.25);
+        */
+
         // player
         player = game.add.sprite(300, 200, 'lady gaga');
         player.anchor.setTo(0.5, 0.5);
@@ -271,7 +284,7 @@ Game.prototype = {
         });
 
             //      font: 'bold 30pt TheMinion', fill: '#FDFFB5', align: 'center'
-        introText = game.add.text(game.world.centerX, 100, tutorialText[8], { font: '25px TheMinion', fill: '#FDFFB5', align: 'center' });
+        introText = game.add.text(game.world.centerX, 100, "", { font: '25px TheMinion', fill: '#FDFFB5', align: 'center' });
         introText.anchor.setTo(0.5, 0.5);
         scoreText = game.add.text(10, 20, "Score: " + score, { font: '16px TheMinion', fill: '#FDFFB5', align: 'center' });
 
@@ -360,18 +373,37 @@ Game.prototype = {
         }
 
         // spawn new onews
-        if (game.time.now > nextTankSpawn && enemiesTotal < 25) {
-            nextTankSpawn = game.time.now + tankRespawnRate;
+        if (game.time.now > nextTankSpawn && enemiesTotal < maxTanks) {
+            nextTankSpawn = game.time.now + tankRespawnRate - level * 550;
             if (tankRespawnRate > 1500) {
-                tankRespawnRate -= 150;
+                //tankRespawnRate -= 10;
             }
-            this.tankSpeed += 1;
-            enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder, this.tankSpeed));
+            //this.tankSpeed += 1;
+            enemiesTotal++;
+            enemies.push(new EnemyTank(totalEnemiesSpawned++, game, player, goblein, enemyBullets, pathfinder, this.tankSpeed + level * 2));
         } 
 
-        if (enemiesTotal >= 25 && enemiesAlive == 0) {
+        if (enemiesTotal >= maxTanks && enemiesAlive == 0 && this.game.nextLevelIn == undefined) {
+            level++;
+            introText.text = "Level " + level;
+            introText.visible = true;
+            this.game.nextLevelIn = this.game.time.now + 3000;
+            
+            //this.game.state.start("Game");
+        }
+
+        if (this.game.nextLevelIn != undefined && this.game.time.now > this.game.nextLevelIn) {
+            
+            enemiesTotal = 0;
+            maxTanks = level * 3;
+            introText.visible = false;
+            this.game.nextLevelIn = undefined;
+        }
+
+        if (level > 10) {
             introText.text = "You win!"
             introText.visible = true;
+            nextTankSpawn = game.time.now + 5000;
             this.game.state.start("YouWin");
         }
 
@@ -393,7 +425,6 @@ Game.prototype = {
             enemiesTotal = 0;
             enemiesAlive = 0;
             tankSpeed = 7;
-            introText.text = tutorialText[1];
             nextTankSpawn = 500;
             tankRespawnRate = 5000;
             tankSpeed = 7;
@@ -417,7 +448,9 @@ Game.prototype = {
                 introText.text = tutorialText[game.started];
             }
         } else {
-            introText.visible = false;
+            if (introText.text.indexOf("level") == -1) {
+                introText.visible = false;
+            }
         }
 
         if (game.over) {
