@@ -363,7 +363,7 @@ Game.prototype = {
         if (game.time.now > nextTankSpawn && enemiesTotal < 25) {
             nextTankSpawn = game.time.now + tankRespawnRate;
             if (tankRespawnRate > 1500) {
-                tankRespawnRate -= 120;
+                tankRespawnRate -= 100;
             }
             this.tankSpeed += 1;
             enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder, this.tankSpeed));
