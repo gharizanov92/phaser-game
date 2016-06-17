@@ -42,12 +42,13 @@ GameOver.prototype = {
     this.addMenuOption('Play Again', function (e) {
       this.game.restartIn = undefined;
       this.game.over = false;
-      this.game.started = 1;
+      this.game.started = 0;
       enemies = [];
       enemiesTotal = 0;
       enemiesAlive = 0;
-      tankSpeed = 7;
-      introText.text = tutorialText[1];
+      tankSpeed = 10;
+      introText.text = tutorialText[0];
+      tankRespawnRate = 3000;
       this.game.state.start("Game");
     });
     this.addMenuOption('Main Menu', function (e) {

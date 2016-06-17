@@ -49,7 +49,7 @@ YouWin.prototype = {
       enemiesTotal = 0;
       enemiesAlive = 0;
       tankSpeed = 7;
-      introText.text = tutorialText[1];
+      introText.text = tutorialText[0];
       this.game.state.start("Game");
     });
     this.addMenuOption('Main Menu', function (e) {

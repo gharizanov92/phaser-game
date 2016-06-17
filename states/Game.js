@@ -214,7 +214,7 @@ Game.prototype = {
         player.animations.add('upRight', [28, 29, 30, 31], 8, true);
 
         // arrow and energy bar
-        energyBar = game.add.sprite(0, 480, 'loading');
+        energyBar = game.add.sprite(0, 0, 'loading');
 
         // enemies
         //  The enemies bullet group
@@ -273,7 +273,7 @@ Game.prototype = {
             //      font: 'bold 30pt TheMinion', fill: '#FDFFB5', align: 'center'
         introText = game.add.text(game.world.centerX, 100, tutorialText[8], { font: '25px TheMinion', fill: '#FDFFB5', align: 'center' });
         introText.anchor.setTo(0.5, 0.5);
-        scoreText = game.add.text(10, 10, "Score: " + score, { font: '16px TheMinion', fill: '#FDFFB5', align: 'center' });
+        scoreText = game.add.text(10, 20, "Score: " + score, { font: '16px TheMinion', fill: '#FDFFB5', align: 'center' });
 
         graphics = game.add.graphics(0, 0);        
         graphics.lineStyle(2, 0x0000FF, 0.2);
@@ -287,6 +287,7 @@ Game.prototype = {
     update: function() {
         enemiesAlive = 0;
         energyBar.scale.setTo(2.06 * (player.energy / 100), 0.90);
+        energyBar.bringToTop();
 
         if (game.over) {
             this.gameOver();
@@ -375,6 +376,7 @@ Game.prototype = {
         }
 
         scoreText.text = "Score: " + score;
+        scoreText.bringToTop();
     },
 
     gameOver : function() {
