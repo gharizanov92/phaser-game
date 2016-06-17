@@ -358,13 +358,18 @@ Game.prototype = {
         }
 
         // spawn new onews
-        if (game.time.now > nextTankSpawn && enemiesTotal < 30) {
+        if (game.time.now > nextTankSpawn && enemiesTotal < 25) {
             nextTankSpawn = game.time.now + tankRespawnRate;
             if (tankRespawnRate > 1500) {
                 tankRespawnRate -= 150;
             }
             this.tankSpeed += 2;
             enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder, this.tankSpeed));
+        } 
+
+        if (enemiesTotal > 25) {
+            introText.text = "You win!"
+            introText.visible = true;
         }
 
         scoreText.text = "Score: " + score;
@@ -415,7 +420,7 @@ Game.prototype = {
             return;
         }
 
-        if (game.physics.arcade.distanceBetween(player, game.input.activePointer) < 96) {
+        if (game.physics.arcade.distanceBetween(player, game.input.activePointer) < 64) {
             canShoot = true;
             arrow = game.add.sprite(player.x + player.width / 2, player.y + player.height / 2, graphics.generateTexture());
             //arrow = game.add.sprite(player.x, player.y, graphics.generateTexture());
