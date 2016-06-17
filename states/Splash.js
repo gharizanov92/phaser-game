@@ -9,6 +9,7 @@ Splash.prototype = {
     game.load.script('gamemenu','states/GameMenu.js');
     game.load.script('game', 'states/Game.js');
     game.load.script('gameover','states/GameOver.js');
+    game.load.script('youwin','states/YouWin.js');
     game.load.script('utils', 'js/utils.js');
   },
 
@@ -57,6 +58,7 @@ Splash.prototype = {
     game.state.add("GameMenu",GameMenu);
     game.state.add("Game",Game);
     game.state.add("GameOver",GameOver);
+    game.state.add("YouWin",YouWin);
   },
 
   addGameMusic: function () {

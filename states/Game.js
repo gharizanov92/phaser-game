@@ -285,6 +285,7 @@ Game.prototype = {
     },
 
     update: function() {
+        enemiesAlive = 0;
         energyBar.scale.setTo(2.06 * (player.energy / 100), 0.90);
 
         if (game.over) {
@@ -358,18 +359,19 @@ Game.prototype = {
         }
 
         // spawn new onews
-        if (game.time.now > nextTankSpawn && enemiesTotal < 25) {
+        if (game.time.now > nextTankSpawn && enemiesTotal < 3) {
             nextTankSpawn = game.time.now + tankRespawnRate;
             if (tankRespawnRate > 1500) {
-                tankRespawnRate -= 150;
+                tankRespawnRate -= 120;
             }
-            this.tankSpeed += 2;
+            this.tankSpeed += 1;
             enemies.push(new EnemyTank(enemiesTotal++, game, player, goblein, enemyBullets, pathfinder, this.tankSpeed));
         } 
 
-        if (enemiesTotal > 25) {
+        if (enemiesTotal >= 3 && enemiesAlive == 0) {
             introText.text = "You win!"
             introText.visible = true;
+            this.game.state.start("YouWin");
         }
 
         scoreText.text = "Score: " + score;
@@ -381,7 +383,7 @@ Game.prototype = {
         if (!game.restartIn) {
             game.restartIn = game.time.now + 1000;
         } else if (game.time.now > game.restartIn) {
-            game.state.start(game.state.current);
+            //game.state.start(game.state.current);
             game.restartIn = undefined;
             game.over = false;
             game.started = 1;
