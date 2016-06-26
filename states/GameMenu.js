@@ -41,6 +41,15 @@ GameMenu.prototype = {
     this.addMenuOption('Start', function () {
       game.state.start("Game");
     });
+
+    this.addMenuOption('Toggle fullscreen', function () {
+      if (game.scale.isFullScreen) {
+            game.scale.stopFullScreen();
+        }
+        else {
+            game.scale.startFullScreen(false);
+        }
+      });
   }
 };
 

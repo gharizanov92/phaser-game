@@ -19,6 +19,9 @@ var moveToY = 200;
 var tileWidth = 10;
 var tileHeight = 10;
 
+var mouse_x;
+var mouse_y;
+
 var map;
 var tileset;
 var grid;
@@ -155,8 +158,6 @@ Game.prototype = {
 
         this.tankSpeed = 7;
 
-        game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
-
         // game
         game.world.setBounds(0, 0, 800, 480);
 
@@ -174,6 +175,8 @@ Game.prototype = {
         //map.setCollisionBetween(1, 7);
         game.physics.p2.convertTilemap(map, layer);
         //var walkables = [127];
+
+        game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
 
         pathfinder = game.plugins.add(Phaser.Plugin.PathFinderPlugin);
         pathfinder._easyStar.enableDiagonals();
@@ -298,6 +301,10 @@ Game.prototype = {
     },
 
     update: function() {
+        var pos = game.input.activePointer.position;
+        mouse_x = pos.x;
+        mouse_y = pos.y;
+
         enemiesAlive = 0;
         energyBar.scale.setTo(2.06 * (player.energy / 100), 0.90);
         energyBar.bringToTop();
@@ -466,7 +473,7 @@ Game.prototype = {
             if(!allowMovement) {
                 return; 
             }
-            findPath(new Phaser.Point(player.x + player.width / 2, player.y  + player.height / 2), new Phaser.Point(game.input.activePointer.pageX, game.input.activePointer.pageY), createPathForPlayer);
+            findPath(new Phaser.Point(player.x + player.width / 2, player.y  + player.height / 2), new Phaser.Point(mouse_x, mouse_y), createPathForPlayer);
         }
     },
 
